@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <nugget name="ZRESTAPI-1.0.0">
- <CLAS CLSNAME="ZCL_REST_HANDLER" VERSION="1" LANGU="E" DESCRIPT="REST API Handler" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
-  <implementing CLSNAME="ZCL_REST_HANDLER" REFCLSNAME="IF_HTTP_EXTENSION" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1"/>
+ <CLAS CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" VERSION="1" LANGU="E" DESCRIPT="Hello World" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <implementing CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" REFCLSNAME="ZIF_REST_RESOURCE_READ" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1"/>
   <localImplementation>*&quot;* local class implementation for public class
 *&quot;* use this source file for the implementation part of
 *&quot;* local helper classes</localImplementation>
@@ -13,838 +13,112 @@
   <textPool>
    <language SPRAS="E"/>
   </textPool>
-  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_CREATE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="1 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_CREATE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_DELETE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="4 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_DELETE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_READ" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="2 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_READ" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_UPDATE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="3 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_UPDATE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <interfaceMethod CLSNAME="ZCL_REST_HANDLER" CPDNAME="IF_HTTP_EXTENSION~HANDLE_REQUEST">
-   <source>METHOD if_http_extension~handle_request.
+  <interfaceMethod CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" CPDNAME="ZIF_REST_RESOURCE_READ~READ">
+   <source>METHOD zif_rest_resource_read~read.
 
-  FIELD-SYMBOLS: &lt;fs_request&gt;  TYPE ANY,
-                 &lt;fs_response&gt; TYPE ANY.
+  DATA: ls_response TYPE zst_rest_response_basic.
 
-* Anonymous data objects
-  DATA: request       TYPE REF TO data,
-        response      TYPE REF TO data.
+  ls_response-success = &apos;true&apos;.
+  ls_response-msg     = &apos;Hello World&apos;.
+  ls_response-code    = 200.
 
-* Objects
-  DATA: lo_rest_auth  TYPE REF TO zcl_rest_auth,
-        lo_ex         TYPE REF TO cx_root.
-
-* Internal tables
-  DATA: t_url_params  TYPE string_table,
-        t_nvp         TYPE tihttpnvp.
-
-* Elementary
-  DATA: verb          TYPE string,
-        path_info     TYPE string,
-        app           TYPE string,
-        resource      TYPE string,
-        app_aux       TYPE string,
-        resource_aux  TYPE string,
-        request_type  TYPE string,
-        response_type TYPE string,
-        userid        TYPE string,
-        password      TYPE string,
-        token         TYPE string,
-        token_co      TYPE string,
-        auth_ok(1)    TYPE c.
-
-* Retrieving the request method (POST, GET, PUT, DELETE)
-  verb = server-&gt;request-&gt;get_header_field( name = &apos;~request_method&apos; ).
-
-* Only methods GET, POST, PUT, DELETE are allowed
-  IF ( verb NE &apos;GET&apos; ) AND ( verb NE &apos;POST&apos; ) AND
-     ( verb NE &apos;PUT&apos; ) AND ( verb NE &apos;DELETE&apos; ).
-
-    me-&gt;method_not_allowed( server ).
-
-    EXIT.
-
-  ENDIF.
-
-* Get all header fields received
-  server-&gt;request-&gt;get_form_fields_cs( CHANGING fields = t_nvp ).
-
-* Retrieving the parameters passed in the URL
-  path_info = server-&gt;request-&gt;get_header_field( name = &apos;~path_info&apos; ).
-
-  SHIFT path_info LEFT BY 1 PLACES.
-
-* Populate an internal table with all URL parameters received
-  SPLIT path_info AT &apos;/&apos; INTO TABLE t_url_params.
-
-* The FIRST URL parameter MUST BE the APPLICATION identifier
-  READ TABLE t_url_params INTO app INDEX 1.
-
-* The SECOND URL parameter MUST BE the RESOURCE identifier
-  READ TABLE t_url_params INTO resource INDEX 2.
-
-  IF app IS INITIAL.
-
-    app_aux = server-&gt;request-&gt;get_form_field(&apos;app&apos;).
-
-    IF NOT app_aux IS INITIAL.
-      app = app_aux.
-    ELSE.
-      me-&gt;application_not_found( server ).
-      EXIT.
-    ENDIF.
-
-  ENDIF.
-
-  IF resource IS INITIAL.
-
-    resource_aux = server-&gt;request-&gt;get_form_field(&apos;resource&apos;).
-
-    IF NOT resource_aux IS INITIAL.
-      resource = resource_aux.
-    ELSE.
-      me-&gt;resource_not_found( server ).
-      EXIT.
-    ENDIF.
-
-  ENDIF.
-
-  TRANSLATE app TO UPPER CASE.
-  TRANSLATE resource TO UPPER CASE.
-
-***** Just uncomment this block code if you want to use the user switch authentication mechanism
-*****  lo_rest_auth = zcl_rest_auth=&gt;get_instance( ).
-*****
-*****  userid   = server-&gt;request-&gt;get_form_field(&apos;uid&apos;).
-*****  password = server-&gt;request-&gt;get_form_field(&apos;pwd&apos;).
-*****  token    = server-&gt;request-&gt;get_form_field(&apos;tkn&apos;).
-*****  token_co = server-&gt;request-&gt;get_form_field(&apos;tknco&apos;).
-*****
-*****  lo_rest_auth-&gt;authenticate(
-*****    EXPORTING
-*****      i_id       = userid
-*****      i_objtype  = &apos;ZUSWIU&apos;
-*****      i_password = password
-*****      i_token    = token
-*****      i_token_co = token_co
-*****      i_app      = app
-*****      i_t_nvp    = t_nvp
-*****    RECEIVING
-*****      r_auth_ok  = auth_ok
-*****  ).
-*****
-*****  IF auth_ok IS INITIAL.
-*****
-*****    me-&gt;unauthorized( server ).
-*****
-*****    EXIT.
-*****
-*****  ENDIF.
-
-  &quot; Try to find the resource. If found, then an instance of it is created)
-  me-&gt;get_rest_resource(
-    EXPORTING i_resource = resource
-              i_verb = verb
-  ).
-
-  CASE verb.
-
-    WHEN &apos;POST&apos;.
-
-      IF NOT me-&gt;o_resource_create IS BOUND.
-        me-&gt;resource_not_found( server ).
-        EXIT.
-      ENDIF.
-
-      TRY.
-
-          request_type  = me-&gt;o_resource_create-&gt;get_request_type( i_app = app ).
-
-          response_type = me-&gt;o_resource_create-&gt;get_response_type( i_app = app ).
-
-        CATCH cx_root INTO lo_ex.
-
-          &quot; Do nothing ...
-
-      ENDTRY.
-
-      IF NOT request_type IS INITIAL.
-
-        CREATE DATA request TYPE (request_type).
-
-        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
-
-        me-&gt;transfer_request_data(
-          EXPORTING
-            i_t_nvp    = t_nvp
-          CHANGING
-            ch_request = &lt;fs_request&gt;
-        ).
-
-      ENDIF.
-
-      IF response_type IS INITIAL.
-        &quot; Falls back to the basic response type
-        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
-      ENDIF.
-
-      CREATE DATA response TYPE (response_type).
-      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
-
-      IF &lt;fs_request&gt; IS ASSIGNED.
-
-        me-&gt;o_resource_create-&gt;create(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-            i_request  = &lt;fs_request&gt;
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ELSE.
-
-        me-&gt;o_resource_create-&gt;create(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ENDIF.
-
-    WHEN &apos;GET&apos;.
-
-      IF NOT me-&gt;o_resource_read IS BOUND.
-        me-&gt;resource_not_found( server ).
-        EXIT.
-      ENDIF.
-
-      TRY.
-
-          request_type  = me-&gt;o_resource_read-&gt;get_request_type( i_app = app ).
-
-          response_type = me-&gt;o_resource_read-&gt;get_response_type( i_app = app ).
-
-        CATCH cx_root INTO lo_ex.
-
-          &quot; Do nothing ...
-
-      ENDTRY.
-
-      IF NOT request_type IS INITIAL.
-
-        CREATE DATA request TYPE (request_type).
-
-        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
-
-        me-&gt;transfer_request_data(
-          EXPORTING
-            i_t_nvp    = t_nvp
-          CHANGING
-            ch_request = &lt;fs_request&gt;
-        ).
-
-      ENDIF.
-
-      IF response_type IS INITIAL.
-        &quot; Falls back to the basic response type
-        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
-      ENDIF.
-
-      CREATE DATA response TYPE (response_type).
-      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
-
-      IF &lt;fs_request&gt; IS ASSIGNED.
-
-        me-&gt;o_resource_read-&gt;read(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-            i_request  = &lt;fs_request&gt;
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ELSE.
-
-        me-&gt;o_resource_read-&gt;read(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ENDIF.
-
-    WHEN &apos;PUT&apos;.
-
-      IF NOT me-&gt;o_resource_update IS BOUND.
-        me-&gt;resource_not_found( server ).
-        EXIT.
-      ENDIF.
-
-      TRY.
-
-          request_type  = me-&gt;o_resource_update-&gt;get_request_type( ).
-
-          response_type = me-&gt;o_resource_update-&gt;get_response_type( ).
-
-        CATCH cx_root INTO lo_ex.
-
-          &quot; Do nothing ...
-
-      ENDTRY.
-
-      IF NOT request_type IS INITIAL.
-
-        CREATE DATA request TYPE (request_type).
-
-        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
-
-        me-&gt;transfer_request_data(
-          EXPORTING
-            i_t_nvp    = t_nvp
-          CHANGING
-            ch_request = &lt;fs_request&gt;
-        ).
-
-      ENDIF.
-
-      IF response_type IS INITIAL.
-        &quot; Falls back to the basic response type
-        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
-      ENDIF.
-
-      CREATE DATA response TYPE (response_type).
-      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
-
-      IF &lt;fs_request&gt; IS ASSIGNED.
-
-        me-&gt;o_resource_update-&gt;update(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-            i_request  = &lt;fs_request&gt;
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ELSE.
-
-        me-&gt;o_resource_update-&gt;update(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ENDIF.
-
-    WHEN &apos;DELETE&apos;.
-
-      IF NOT me-&gt;o_resource_delete IS BOUND.
-        me-&gt;resource_not_found( server ).
-        EXIT.
-      ENDIF.
-
-      TRY.
-
-          request_type  = me-&gt;o_resource_delete-&gt;get_request_type( ).
-          response_type = me-&gt;o_resource_delete-&gt;get_response_type( ).
-
-        CATCH cx_root INTO lo_ex.
-
-          &quot; Do nothing ...
-
-      ENDTRY.
-
-      IF NOT request_type IS INITIAL.
-
-        CREATE DATA request TYPE (request_type).
-
-        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
-
-        me-&gt;transfer_request_data(
-          EXPORTING
-            i_t_nvp    = t_nvp
-          CHANGING
-            ch_request = &lt;fs_request&gt;
-        ).
-
-      ENDIF.
-
-      IF response_type IS INITIAL.
-        &quot; Falls back to the basic response type
-        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
-      ENDIF.
-
-      CREATE DATA response TYPE (response_type).
-      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
-
-      IF &lt;fs_request&gt; IS ASSIGNED.
-
-        me-&gt;o_resource_delete-&gt;delete(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-            i_request  = &lt;fs_request&gt;
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ELSE.
-
-        me-&gt;o_resource_delete-&gt;delete(
-          EXPORTING
-            i_t_nvp    = t_nvp
-            i_app      = app
-          IMPORTING
-            e_response = &lt;fs_response&gt;
-        ).
-
-      ENDIF.
-
-  ENDCASE.
-
-  IF &lt;fs_response&gt; IS ASSIGNED.
-
-    me-&gt;set_response(
-      EXPORTING
-        i_server   = server
-        i_response = &lt;fs_response&gt;
-*       I_TYPE     = &apos;JSON&apos; &quot; Default = JSON
-    ).
-
-  ENDIF.
+  e_response = ls_response.
 
 ENDMETHOD.</source>
   </interfaceMethod>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="APPLICATION_NOT_FOUND" VERSION="1" LANGU="E" DESCRIPT="Application resource not found" EXPOSURE="0" STATE="1" EDITORDER="5 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="APPLICATION_NOT_FOUND" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <source>METHOD APPLICATION_NOT_FOUND.
-
-  i_server-&gt;response-&gt;set_status(
-    code = 404
-    reason = &apos;Application not found&apos;
-  ).
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" VERSION="1" LANGU="E" DESCRIPT="Get the REST resource" EXPOSURE="0" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" SCONAME="I_RESOURCE" VERSION="1" LANGU="E" DESCRIPT="REST Resource" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" SCONAME="I_VERB" VERSION="1" LANGU="E" DESCRIPT="POST, GET, PUT, DELETE" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <source>METHOD get_rest_resource.
-
-  DATA: t_vseoifimpl TYPE STANDARD TABLE OF vseoifimpl.
-
-  DATA: s_vseoifimpl TYPE vseoifimpl.
-
-  DATA: class_name TYPE vseoifimpl-clsname,
-        refclsname TYPE vseoifimpl-refclsname.
-
-  CONCATENATE &apos;%&apos; i_resource INTO class_name.
-
-  CHECK NOT i_resource IS INITIAL.
-
-  CASE i_verb.
-    WHEN &apos;POST&apos;.
-      refclsname = &apos;ZIF_REST_RESOURCE_CREATE&apos;.
-    WHEN &apos;GET&apos;.
-      refclsname = &apos;ZIF_REST_RESOURCE_READ&apos;.
-    WHEN &apos;PUT&apos;.
-      refclsname = &apos;ZIF_REST_RESOURCE_UPDATE&apos;.
-    WHEN &apos;DELETE&apos;.
-      refclsname = &apos;ZIF_REST_RESOURCE_DELETE&apos;.
-  ENDCASE.
-
-  SELECT clsname refclsname version state FROM vseoifimpl
-    INTO TABLE t_vseoifimpl
-    WHERE clsname LIKE class_name AND
-          refclsname = refclsname AND
-          version    = &apos;1&apos; AND
-          state      = &apos;1&apos;.
-
-  IF NOT t_vseoifimpl[] IS INITIAL.
-
-    READ TABLE t_vseoifimpl INTO s_vseoifimpl INDEX 1.
-
-    CASE i_verb.
-      WHEN &apos;POST&apos;.
-        CREATE OBJECT me-&gt;o_resource_create
-          TYPE (s_vseoifimpl-clsname).
-      WHEN &apos;GET&apos;.
-        CREATE OBJECT me-&gt;o_resource_read
-          TYPE (s_vseoifimpl-clsname).
-      WHEN &apos;PUT&apos;.
-        CREATE OBJECT me-&gt;o_resource_update
-          TYPE (s_vseoifimpl-clsname).
-      WHEN &apos;DELETE&apos;.
-        CREATE OBJECT me-&gt;o_resource_delete
-          TYPE (s_vseoifimpl-clsname).
-    ENDCASE.
-
-  ENDIF.
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="METHOD_NOT_ALLOWED" VERSION="1" LANGU="E" DESCRIPT="Method (HTTP Verb) not allowed" EXPOSURE="0" STATE="1" EDITORDER="3 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="METHOD_NOT_ALLOWED" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <source>METHOD METHOD_NOT_ALLOWED.
-
-  &quot; For any other method the service should return the error code 405
-  i_server-&gt;response-&gt;set_status(
-    code = &apos;405&apos;
-    reason = &apos;Method not allowed&apos;
-  ).
-
-  i_server-&gt;response-&gt;set_header_field(
-    name = &apos;Allow&apos;
-    value = &apos;POST, GET, PUT, DELETE&apos;
-  ).
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="RESOURCE_NOT_FOUND" VERSION="1" LANGU="E" DESCRIPT="REST resource not found" EXPOSURE="0" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="RESOURCE_NOT_FOUND" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <source>METHOD RESOURCE_NOT_FOUND.
-
-  i_server-&gt;response-&gt;set_status(
-    code = 404
-    reason = &apos;Resource not found&apos;
-  ).
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Set response" EXPOSURE="0" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Response" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_TYPE" VERSION="1" LANGU="E" DESCRIPT="Response type" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="CHAR30" PARVALUE="&apos;JSON&apos;"/>
-   <source>METHOD SET_RESPONSE.
-
-  &quot; Objects
-  DATA: json_doc TYPE REF TO zcl_json_document.
-
-  &quot; Variables
-  DATA: json_response TYPE string.
-
-  IF i_type = &apos;JSON&apos;.
-
-    json_doc = zcl_json_document=&gt;create_with_data( i_response ).
-
-    json_response = json_doc-&gt;get_json( ).
-
-*   Sets the content type of the response
-    i_server-&gt;response-&gt;set_header_field(
-      name = &apos;Content-Type&apos;
-      value = &apos;application/json; charset=iso-8859-1&apos;
-    ).
-
-*   Returns the results in JSON format
-    i_server-&gt;response-&gt;set_cdata( data = json_response ).
-
-  ENDIF.
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" VERSION="1" LANGU="E" DESCRIPT="Transfer request data" EXPOSURE="0" STATE="1" EDITORDER="6 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" SCONAME="I_T_NVP" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) Table Name/Value Pairs" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="TIHTTPNVP"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" SCONAME="CH_REQUEST" VERSION="1" LANGU="E" DESCRIPT="Request data" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="2" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
-   <source>METHOD transfer_request_data.
-
-  FIELD-SYMBOLS: &lt;fs&gt; TYPE ANY.
-
-  &quot; Objects
-  DATA: o_ex TYPE REF TO cx_root.
-
-  &quot; Strcutures
-  DATA: s_nvp LIKE LINE OF i_t_nvp.
-
-  LOOP AT i_t_nvp INTO s_nvp.
-
-    TRY.
-
-        TRANSLATE s_nvp-name TO UPPER CASE.
-
-        ASSIGN COMPONENT s_nvp-name OF STRUCTURE ch_request TO &lt;fs&gt;.
-
-        IF &lt;fs&gt; IS ASSIGNED.
-          &lt;fs&gt; = s_nvp-value.
-          UNASSIGN &lt;fs&gt;.
-        ENDIF.
-
-      CATCH cx_root INTO o_ex.
-        &quot; TODO: handle conversion errors
-    ENDTRY.
-
-  ENDLOOP.
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="UNAUTHORIZED" VERSION="1" LANGU="E" DESCRIPT="User unauthorized" EXPOSURE="0" STATE="1" EDITORDER="7 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="UNAUTHORIZED" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <source>METHOD UNAUTHORIZED.
-
-  i_server-&gt;response-&gt;set_status(
-    code   = &apos;401&apos;
-    reason = &apos;Unauthorized&apos;
-  ).
-
-  i_server-&gt;response-&gt;set_header_field(
-    name  = &apos;Reason&apos;
-    value = &apos;Unauthorized&apos;
-  ).
-
-ENDMETHOD.</source>
-  </method>
  </CLAS>
- <CLAS CLSNAME="ZCL_USW_UTILS" VERSION="1" LANGU="E" DESCRIPT="Utilitários" CATEGORY="00" EXPOSURE="0" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
-  <localImplementation>*&quot;* use this source file for the definition and implementation of
-*&quot;* local helper classes, interface definitions and type
-*&quot;* declarations</localImplementation>
-  <localTypes>*&quot;* use this source file for any type of declarations (class
-*&quot;* definitions, interfaces or type declarations) you need for
-*&quot;* components in the private section</localTypes>
+ <CLAS CLSNAME="ZCL_REST_AUTH" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" CATEGORY="00" EXPOSURE="0" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <localImplementation>*&quot;* local class implementation for public class
+*&quot;* use this source file for the implementation part of
+*&quot;* local helper classes</localImplementation>
+  <localTypes>*&quot;* use this source file for any type declarations (class
+*&quot;* definitions, interfaces or data types) you need for method
+*&quot;* implementation or private method&apos;s signature</localTypes>
   <localMacros>*&quot;* use this source file for any macro definitions you need
 *&quot;* in the implementation part of the class</localMacros>
   <textPool>
    <language SPRAS="E"/>
   </textPool>
-  <attribute CLSNAME="ZCL_USW_UTILS" CMPNAME="REF" VERSION="1" LANGU="E" DESCRIPT="Utilitários" EXPOSURE="0" STATE="1" EDITORDER="1 " ATTDECLTYP="1" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZCL_USW_UTILS" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_INSTANCE" VERSION="1" LANGU="E" DESCRIPT="Return instance (Singleton)" EXPOSURE="2" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_INSTANCE" SCONAME="R_REF" VERSION="1" LANGU="E" DESCRIPT="Utilitários" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="3" TYPE="ZCL_USW_UTILS"/>
-   <source>METHOD GET_INSTANCE.
+  <typeUsage CLSNAME="ZCL_REST_AUTH" TYPEGROUP="ABAP" VERSION="1" TPUTYPE="0" IMPLICIT="X"/>
+  <forwardDeclaration>ABAP</forwardDeclaration>
+  <attribute CLSNAME="ZCL_REST_AUTH" CMPNAME="REF" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" EXPOSURE="0" STATE="1" EDITORDER="1 " ATTDECLTYP="1" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZCL_REST_AUTH" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <method CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" VERSION="1" LANGU="E" DESCRIPT="Perform user authentication" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_ID" VERSION="1" LANGU="E" DESCRIPT="Internet user ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_OBJTYPE" VERSION="1" LANGU="E" DESCRIPT="Business object type" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PARVALUE="&apos;BUS1008&apos;"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_PASSWORD" VERSION="1" LANGU="E" DESCRIPT="Internet user password" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_TOKEN" VERSION="1" LANGU="E" DESCRIPT="Authentication token" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_TOKEN_CO" VERSION="1" LANGU="E" DESCRIPT="Token content to check" CMPTYPE="1" MTDTYPE="0" EDITORDER="5 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_APP" VERSION="1" LANGU="E" DESCRIPT="App ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="6 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_T_NVP" VERSION="1" LANGU="E" DESCRIPT="Name/value pairs table" CMPTYPE="1" MTDTYPE="0" EDITORDER="7 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="TIHTTPNVP" PAROPTIONL="X"/>
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="R_AUTH_OK" VERSION="1" LANGU="E" DESCRIPT="Ok = &apos;X&apos;, not Ok = &apos; &apos;" CMPTYPE="1" MTDTYPE="0" EDITORDER="8 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ABAP_BOOL"/>
+   <source>METHOD authenticate.
 
-  IF NOT ref IS BOUND.
-    CREATE OBJECT ref.
-  ENDIF.
+  &quot; Objects
+  DATA: lo_usw TYPE REF TO zcl_usw.
 
-  r_ref = ref.
+  lo_usw = zcl_usw=&gt;get_instance( ).
 
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" VERSION="1" LANGU="E" DESCRIPT="Get vendor data" EXPOSURE="2" STATE="1" EDITORDER="7 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="I_STCD1" VERSION="1" LANGU="E" DESCRIPT="C.N.P.J / CPF" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STCD1"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_LIFNR" VERSION="1" LANGU="E" DESCRIPT="Nº conta do fornecedor" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LIFNR"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_NAME1" VERSION="1" LANGU="E" DESCRIPT="Nome 1" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LFA1-NAME1"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_NAME2" VERSION="1" LANGU="E" DESCRIPT="Nome 2" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LFA1-NAME2"/>
-   <source>METHOD GET_VENDOR.
+  &quot; User/password auth
+  IF ( NOT i_id IS INITIAL ) AND ( NOT i_password IS INITIAL ).
 
-  DATA: BEGIN OF ls_lfa1,
-        lifnr TYPE lfa1-lifnr,
-        name1 TYPE lfa1-name1,
-        name2 TYPE lfa1-name2,
-      END OF ls_lfa1.
-
-  DATA: lt_lifnr LIKE STANDARD TABLE OF ls_lfa1.
-
-  DATA: l_stcd2 TYPE lfa1-stcd2.
-
-  IF strlen( i_stcd1 ) = 14. &quot; CNPJ
-
-    SELECT lifnr name1 name2 FROM lfa1
-      INTO TABLE lt_lifnr UP TO 1 ROWS
-      WHERE stcd1 = i_stcd1.
-  ENDIF.
-
-  IF strlen( i_stcd1 ) = 11. &quot; CPF
-
-    SELECT lifnr name1 name2 FROM lfa1
-      INTO TABLE lt_lifnr UP TO 1 ROWS
-      WHERE stcd2 = l_stcd2.
-
-  ENDIF.
-
-  IF sy-subrc = 0.
-
-    READ TABLE lt_lifnr INTO ls_lfa1 INDEX 1.
-
-    e_lifnr = ls_lfa1-lifnr.
-    e_name1 = ls_lfa1-name1.
-    e_name2 = ls_lfa1-name2.
-
-  ENDIF.
-
-ENDMETHOD.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" VERSION="1" LANGU="E" DESCRIPT="Create Log (SLG1)" EXPOSURE="2" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_EXTERNAL_ID" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: identificação externa" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALNREXT"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_OBJECT" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: nome do objeto (sigla de aplicação)" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALOBJ_D"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_SUBOBJECT" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: subobjeto" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALSUBOBJ"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_REPID" VERSION="1" LANGU="E" DESCRIPT="Nome do programa ABAP" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="REPID"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="R_BALLOGHNDL" VERSION="1" LANGU="E" DESCRIPT="GUID em formato &apos;CHAR&apos; com maiúsculas/minúsculas (!)" CMPTYPE="1" MTDTYPE="0" EDITORDER="5 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="BALLOGHNDL"/>
-   <source>method LOG_CREATE.
-
-  DATA: ls_log TYPE bal_s_log.
-
-  DATA: l_jobname TYPE tbtcm-jobname.
-
-
-  ls_log-extnumber = i_external_id.
-  ls_log-object    = i_object.
-  ls_log-subobject = i_subobject.
-  ls_log-aluser    = sy-uname.
-  ls_log-alprog    = i_repid.
-  ls_log-altcode   = sy-tcode.
-  ls_log-aldate    = sy-datum.
-  ls_log-altime    = sy-uzeit.
-
-  IF NOT sy-batch IS INITIAL.
-
-    CALL FUNCTION &apos;GET_JOB_RUNTIME_INFO&apos;
-      IMPORTING
-        jobname         = l_jobname
-      EXCEPTIONS
-        no_runtime_info = 1
-        OTHERS          = 2.
-
-    ls_log-alprog    = l_jobname.
-
-*    B  Batch processing
-*    D  DIALOG processing
-*    I  Batch INPUT processing
-    ls_log-almode    = &apos;B&apos;.
-
-  ELSE.
-    ls_log-almode  = &apos;D&apos;.     &quot; Dialog
-  ENDIF.
-
-  CALL FUNCTION &apos;BAL_LOG_CREATE&apos;
-    EXPORTING
-      i_s_log                 = ls_log
-    IMPORTING
-      e_log_handle            = r_balloghndl
-    EXCEPTIONS
-      log_header_inconsistent = 1
-      OTHERS                  = 2.
-
-  IF sy-subrc &lt;&gt; 0.
-    &quot; Ok...
-  ENDIF.
-
-endmethod.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" VERSION="1" LANGU="E" DESCRIPT="Add log message" EXPOSURE="2" STATE="1" EDITORDER="5 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" SCONAME="I_LOG_HANDLE" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: handle de um log" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALLOGHNDL"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" SCONAME="IS_MSG" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: dados de uma mensagem" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BAL_S_MSG"/>
-   <source>method LOG_MSG_ADD.
-
-  CALL FUNCTION &apos;BAL_LOG_MSG_ADD&apos;
-    EXPORTING
-     i_log_handle              = i_log_handle
-      i_s_msg                   = is_msg
-*   IMPORTING
-*     E_S_MSG_HANDLE            =
-*     E_MSG_WAS_LOGGED          =
-*     E_MSG_WAS_DISPLAYED       =
-   EXCEPTIONS
-     log_not_found             = 1
-     msg_inconsistent          = 2
-     log_is_full               = 3
-     OTHERS                    = 4.
-
-  IF sy-subrc &lt;&gt; 0.
-*   Ok
-  ENDIF.
-
-endmethod.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_SAVE" VERSION="1" LANGU="E" DESCRIPT="Save Log" EXPOSURE="2" STATE="1" EDITORDER="6 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_SAVE" SCONAME="I_LOG_HANDLE" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: handle de um log" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALLOGHNDL"/>
-   <source>method LOG_SAVE.
-
-  DATA: t_logh  TYPE bal_t_logh.
-
-  APPEND i_log_handle TO t_logh.
-
-  CALL FUNCTION &apos;BAL_DB_SAVE&apos;
-    EXPORTING
-      i_t_log_handle   = t_logh
-    EXCEPTIONS
-      log_not_found    = 1
-      save_not_allowed = 2
-      numbering_error  = 3
-      OTHERS           = 4.
-
-  IF sy-subrc &lt;&gt; 0.
-*   Ok
-  ENDIF.
-
-endmethod.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" VERSION="1" LANGU="E" DESCRIPT="Unzip" EXPOSURE="2" STATE="1" EDITORDER="3 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="I_ZIP" VERSION="1" LANGU="E" DESCRIPT="Arquivo ZIP" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="XSTRING"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="I_FILENAME" VERSION="1" LANGU="E" DESCRIPT="Nome do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="R_STRING" VERSION="1" LANGU="E" DESCRIPT="String com conteúdo do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="STRING"/>
-   <source>method UNZIP.
-
-  DATA: lo_zip    TYPE REF TO cl_abap_zip,
-        lo_conv   TYPE REF TO cl_abap_conv_in_ce.
-
-  DATA: l_xstring TYPE xstring.
-
-  CREATE OBJECT lo_zip.
-
-  CALL METHOD lo_zip-&gt;load
-    EXPORTING
-      zip = i_zip.
-
-  CALL METHOD lo_zip-&gt;get
-    EXPORTING
-      name    = i_filename
-    IMPORTING
-      content = l_xstring.
-
-  CALL METHOD cl_abap_conv_in_ce=&gt;create
-    EXPORTING
-      input = l_xstring
-    RECEIVING
-      conv  = lo_conv.
-
-  CALL METHOD lo_conv-&gt;read
-    IMPORTING
-      data = r_string.
-
-endmethod.</source>
-  </method>
-  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" VERSION="1" LANGU="E" DESCRIPT="Zip" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="I_STRING" VERSION="1" LANGU="E" DESCRIPT="String com conteúdo do arquivo a ser compactado" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="I_FILENAME" VERSION="1" LANGU="E" DESCRIPT="Nome do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="R_ZIP" VERSION="1" LANGU="E" DESCRIPT="Arquivo zipado" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="XSTRING"/>
-   <source>METHOD ZIP.
-
-  DATA: lo_zip    TYPE REF TO cl_abap_zip,
-        l_xstring TYPE xstring.
-
-*  CALL METHOD cl_bcs_convert=&gt;string_to_xstring(
-*    EXPORTING
-*      iv_string  = i_string   &quot; Input data
-*    RECEIVING
-*      ev_xstring = l_xstring   &quot; Output data
-*                   ).
-
-  CALL FUNCTION &apos;SCMS_STRING_TO_XSTRING&apos;
-    EXPORTING
-      text   = i_string
-    IMPORTING
-      buffer = l_xstring
-    EXCEPTIONS
-      failed = 1
-      OTHERS = 2.
-
-  IF sy-subrc = 0.
-
-    CREATE OBJECT lo_zip.
-
-    lo_zip-&gt;add(    &quot; Add file to ZIP
-      name = i_filename
-      content = l_xstring
+    lo_usw-&gt;check_credentials(
+      EXPORTING
+        i_id       = i_id
+        i_objtype  = i_objtype
+        i_password = i_password
+      RECEIVING
+        r_auth_ok  = r_auth_ok
     ).
 
-    r_zip = lo_zip-&gt;save( ).    &quot; Returns ZIP
+    IF r_auth_ok = &apos;X&apos;.
+
+      lo_usw-&gt;exec_user_switch(
+        EXPORTING
+          i_id        = i_id
+          i_objtype   = i_objtype
+        RECEIVING
+          r_switch_ok = r_auth_ok
+      ).
+
+    ENDIF.
+
+  ELSEIF ( NOT i_token IS INITIAL ) AND ( NOT i_token_co IS INITIAL ).
+
+    lo_usw-&gt;check_token(
+      EXPORTING
+        i_id       = i_id
+        i_objtype  = i_objtype
+        i_app      = i_app
+        i_token    = i_token
+        i_token_co = i_token_co
+        i_t_nvp    = i_t_nvp
+      RECEIVING
+        r_token_ok = r_auth_ok
+    ).
+
+    IF r_auth_ok = &apos;X&apos;.
+
+      lo_usw-&gt;exec_user_switch(
+        EXPORTING
+          i_id        = i_id
+          i_objtype   = i_objtype
+        RECEIVING
+          r_switch_ok = r_auth_ok
+      ).
+
+    ENDIF.
 
   ENDIF.
 
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_AUTH" CMPNAME="GET_INSTANCE" VERSION="1" LANGU="E" DESCRIPT="Return instance (singleton)" EXPOSURE="2" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="GET_INSTANCE" SCONAME="R_REF" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="3" TYPE="ZCL_REST_AUTH"/>
+   <source>METHOD get_instance.
+  IF ref IS NOT BOUND.
+    CREATE OBJECT ref.
+  ENDIF.
+  r_ref = ref.
 ENDMETHOD.</source>
   </method>
  </CLAS>
@@ -1853,7 +1127,258 @@ ENDMETHOD.</source>
 ENDMETHOD.</source>
   </method>
  </CLAS>
- <CLAS CLSNAME="ZCL_REST_AUTH" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" CATEGORY="00" EXPOSURE="0" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+ <CLAS CLSNAME="ZCL_USW_UTILS" VERSION="1" LANGU="E" DESCRIPT="Utilitários" CATEGORY="00" EXPOSURE="0" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <localImplementation>*&quot;* use this source file for the definition and implementation of
+*&quot;* local helper classes, interface definitions and type
+*&quot;* declarations</localImplementation>
+  <localTypes>*&quot;* use this source file for any type of declarations (class
+*&quot;* definitions, interfaces or type declarations) you need for
+*&quot;* components in the private section</localTypes>
+  <localMacros>*&quot;* use this source file for any macro definitions you need
+*&quot;* in the implementation part of the class</localMacros>
+  <textPool>
+   <language SPRAS="E"/>
+  </textPool>
+  <attribute CLSNAME="ZCL_USW_UTILS" CMPNAME="REF" VERSION="1" LANGU="E" DESCRIPT="Utilitários" EXPOSURE="0" STATE="1" EDITORDER="1 " ATTDECLTYP="1" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZCL_USW_UTILS" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_INSTANCE" VERSION="1" LANGU="E" DESCRIPT="Return instance (Singleton)" EXPOSURE="2" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_INSTANCE" SCONAME="R_REF" VERSION="1" LANGU="E" DESCRIPT="Utilitários" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="3" TYPE="ZCL_USW_UTILS"/>
+   <source>METHOD GET_INSTANCE.
+
+  IF NOT ref IS BOUND.
+    CREATE OBJECT ref.
+  ENDIF.
+
+  r_ref = ref.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" VERSION="1" LANGU="E" DESCRIPT="Get vendor data" EXPOSURE="2" STATE="1" EDITORDER="7 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="I_STCD1" VERSION="1" LANGU="E" DESCRIPT="C.N.P.J / CPF" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STCD1"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_LIFNR" VERSION="1" LANGU="E" DESCRIPT="Nº conta do fornecedor" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LIFNR"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_NAME1" VERSION="1" LANGU="E" DESCRIPT="Nome 1" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LFA1-NAME1"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="GET_VENDOR" SCONAME="E_NAME2" VERSION="1" LANGU="E" DESCRIPT="Nome 2" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="1" PARPASSTYP="1" TYPTYPE="1" TYPE="LFA1-NAME2"/>
+   <source>METHOD GET_VENDOR.
+
+  DATA: BEGIN OF ls_lfa1,
+        lifnr TYPE lfa1-lifnr,
+        name1 TYPE lfa1-name1,
+        name2 TYPE lfa1-name2,
+      END OF ls_lfa1.
+
+  DATA: lt_lifnr LIKE STANDARD TABLE OF ls_lfa1.
+
+  DATA: l_stcd2 TYPE lfa1-stcd2.
+
+  IF strlen( i_stcd1 ) = 14. &quot; CNPJ
+
+    SELECT lifnr name1 name2 FROM lfa1
+      INTO TABLE lt_lifnr UP TO 1 ROWS
+      WHERE stcd1 = i_stcd1.
+  ENDIF.
+
+  IF strlen( i_stcd1 ) = 11. &quot; CPF
+
+    SELECT lifnr name1 name2 FROM lfa1
+      INTO TABLE lt_lifnr UP TO 1 ROWS
+      WHERE stcd2 = l_stcd2.
+
+  ENDIF.
+
+  IF sy-subrc = 0.
+
+    READ TABLE lt_lifnr INTO ls_lfa1 INDEX 1.
+
+    e_lifnr = ls_lfa1-lifnr.
+    e_name1 = ls_lfa1-name1.
+    e_name2 = ls_lfa1-name2.
+
+  ENDIF.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" VERSION="1" LANGU="E" DESCRIPT="Create Log (SLG1)" EXPOSURE="2" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_EXTERNAL_ID" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: identificação externa" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALNREXT"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_OBJECT" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: nome do objeto (sigla de aplicação)" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALOBJ_D"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_SUBOBJECT" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: subobjeto" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALSUBOBJ"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="I_REPID" VERSION="1" LANGU="E" DESCRIPT="Nome do programa ABAP" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="REPID"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_CREATE" SCONAME="R_BALLOGHNDL" VERSION="1" LANGU="E" DESCRIPT="GUID em formato &apos;CHAR&apos; com maiúsculas/minúsculas (!)" CMPTYPE="1" MTDTYPE="0" EDITORDER="5 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="BALLOGHNDL"/>
+   <source>method LOG_CREATE.
+
+  DATA: ls_log TYPE bal_s_log.
+
+  DATA: l_jobname TYPE tbtcm-jobname.
+
+
+  ls_log-extnumber = i_external_id.
+  ls_log-object    = i_object.
+  ls_log-subobject = i_subobject.
+  ls_log-aluser    = sy-uname.
+  ls_log-alprog    = i_repid.
+  ls_log-altcode   = sy-tcode.
+  ls_log-aldate    = sy-datum.
+  ls_log-altime    = sy-uzeit.
+
+  IF NOT sy-batch IS INITIAL.
+
+    CALL FUNCTION &apos;GET_JOB_RUNTIME_INFO&apos;
+      IMPORTING
+        jobname         = l_jobname
+      EXCEPTIONS
+        no_runtime_info = 1
+        OTHERS          = 2.
+
+    ls_log-alprog    = l_jobname.
+
+*    B  Batch processing
+*    D  DIALOG processing
+*    I  Batch INPUT processing
+    ls_log-almode    = &apos;B&apos;.
+
+  ELSE.
+    ls_log-almode  = &apos;D&apos;.     &quot; Dialog
+  ENDIF.
+
+  CALL FUNCTION &apos;BAL_LOG_CREATE&apos;
+    EXPORTING
+      i_s_log                 = ls_log
+    IMPORTING
+      e_log_handle            = r_balloghndl
+    EXCEPTIONS
+      log_header_inconsistent = 1
+      OTHERS                  = 2.
+
+  IF sy-subrc &lt;&gt; 0.
+    &quot; Ok...
+  ENDIF.
+
+endmethod.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" VERSION="1" LANGU="E" DESCRIPT="Add log message" EXPOSURE="2" STATE="1" EDITORDER="5 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" SCONAME="I_LOG_HANDLE" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: handle de um log" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALLOGHNDL"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_MSG_ADD" SCONAME="IS_MSG" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: dados de uma mensagem" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BAL_S_MSG"/>
+   <source>method LOG_MSG_ADD.
+
+  CALL FUNCTION &apos;BAL_LOG_MSG_ADD&apos;
+    EXPORTING
+     i_log_handle              = i_log_handle
+      i_s_msg                   = is_msg
+*   IMPORTING
+*     E_S_MSG_HANDLE            =
+*     E_MSG_WAS_LOGGED          =
+*     E_MSG_WAS_DISPLAYED       =
+   EXCEPTIONS
+     log_not_found             = 1
+     msg_inconsistent          = 2
+     log_is_full               = 3
+     OTHERS                    = 4.
+
+  IF sy-subrc &lt;&gt; 0.
+*   Ok
+  ENDIF.
+
+endmethod.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_SAVE" VERSION="1" LANGU="E" DESCRIPT="Save Log" EXPOSURE="2" STATE="1" EDITORDER="6 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="LOG_SAVE" SCONAME="I_LOG_HANDLE" VERSION="1" LANGU="E" DESCRIPT="Log de aplicação: handle de um log" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="BALLOGHNDL"/>
+   <source>method LOG_SAVE.
+
+  DATA: t_logh  TYPE bal_t_logh.
+
+  APPEND i_log_handle TO t_logh.
+
+  CALL FUNCTION &apos;BAL_DB_SAVE&apos;
+    EXPORTING
+      i_t_log_handle   = t_logh
+    EXCEPTIONS
+      log_not_found    = 1
+      save_not_allowed = 2
+      numbering_error  = 3
+      OTHERS           = 4.
+
+  IF sy-subrc &lt;&gt; 0.
+*   Ok
+  ENDIF.
+
+endmethod.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" VERSION="1" LANGU="E" DESCRIPT="Unzip" EXPOSURE="2" STATE="1" EDITORDER="3 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="I_ZIP" VERSION="1" LANGU="E" DESCRIPT="Arquivo ZIP" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="XSTRING"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="I_FILENAME" VERSION="1" LANGU="E" DESCRIPT="Nome do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="UNZIP" SCONAME="R_STRING" VERSION="1" LANGU="E" DESCRIPT="String com conteúdo do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="STRING"/>
+   <source>method UNZIP.
+
+  DATA: lo_zip    TYPE REF TO cl_abap_zip,
+        lo_conv   TYPE REF TO cl_abap_conv_in_ce.
+
+  DATA: l_xstring TYPE xstring.
+
+  CREATE OBJECT lo_zip.
+
+  CALL METHOD lo_zip-&gt;load
+    EXPORTING
+      zip = i_zip.
+
+  CALL METHOD lo_zip-&gt;get
+    EXPORTING
+      name    = i_filename
+    IMPORTING
+      content = l_xstring.
+
+  CALL METHOD cl_abap_conv_in_ce=&gt;create
+    EXPORTING
+      input = l_xstring
+    RECEIVING
+      conv  = lo_conv.
+
+  CALL METHOD lo_conv-&gt;read
+    IMPORTING
+      data = r_string.
+
+endmethod.</source>
+  </method>
+  <method CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" VERSION="1" LANGU="E" DESCRIPT="Zip" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="I_STRING" VERSION="1" LANGU="E" DESCRIPT="String com conteúdo do arquivo a ser compactado" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="I_FILENAME" VERSION="1" LANGU="E" DESCRIPT="Nome do arquivo" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_USW_UTILS" CMPNAME="ZIP" SCONAME="R_ZIP" VERSION="1" LANGU="E" DESCRIPT="Arquivo zipado" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="XSTRING"/>
+   <source>METHOD ZIP.
+
+  DATA: lo_zip    TYPE REF TO cl_abap_zip,
+        l_xstring TYPE xstring.
+
+*  CALL METHOD cl_bcs_convert=&gt;string_to_xstring(
+*    EXPORTING
+*      iv_string  = i_string   &quot; Input data
+*    RECEIVING
+*      ev_xstring = l_xstring   &quot; Output data
+*                   ).
+
+  CALL FUNCTION &apos;SCMS_STRING_TO_XSTRING&apos;
+    EXPORTING
+      text   = i_string
+    IMPORTING
+      buffer = l_xstring
+    EXCEPTIONS
+      failed = 1
+      OTHERS = 2.
+
+  IF sy-subrc = 0.
+
+    CREATE OBJECT lo_zip.
+
+    lo_zip-&gt;add(    &quot; Add file to ZIP
+      name = i_filename
+      content = l_xstring
+    ).
+
+    r_zip = lo_zip-&gt;save( ).    &quot; Returns ZIP
+
+  ENDIF.
+
+ENDMETHOD.</source>
+  </method>
+ </CLAS>
+ <CLAS CLSNAME="ZCL_REST_HANDLER" VERSION="1" LANGU="E" DESCRIPT="REST API Handler" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <implementing CLSNAME="ZCL_REST_HANDLER" REFCLSNAME="IF_HTTP_EXTENSION" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1"/>
   <localImplementation>*&quot;* local class implementation for public class
 *&quot;* use this source file for the implementation part of
 *&quot;* local helper classes</localImplementation>
@@ -1865,86 +1390,588 @@ ENDMETHOD.</source>
   <textPool>
    <language SPRAS="E"/>
   </textPool>
-  <typeUsage CLSNAME="ZCL_REST_AUTH" TYPEGROUP="ABAP" VERSION="1" TPUTYPE="0" IMPLICIT="X"/>
-  <forwardDeclaration>ABAP</forwardDeclaration>
-  <attribute CLSNAME="ZCL_REST_AUTH" CMPNAME="REF" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" EXPOSURE="0" STATE="1" EDITORDER="1 " ATTDECLTYP="1" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZCL_REST_AUTH" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
-  <method CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" VERSION="1" LANGU="E" DESCRIPT="Perform user authentication" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_ID" VERSION="1" LANGU="E" DESCRIPT="Internet user ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_OBJTYPE" VERSION="1" LANGU="E" DESCRIPT="Business object type" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PARVALUE="&apos;BUS1008&apos;"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_PASSWORD" VERSION="1" LANGU="E" DESCRIPT="Internet user password" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_TOKEN" VERSION="1" LANGU="E" DESCRIPT="Authentication token" CMPTYPE="1" MTDTYPE="0" EDITORDER="4 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_TOKEN_CO" VERSION="1" LANGU="E" DESCRIPT="Token content to check" CMPTYPE="1" MTDTYPE="0" EDITORDER="5 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_APP" VERSION="1" LANGU="E" DESCRIPT="App ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="6 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="I_T_NVP" VERSION="1" LANGU="E" DESCRIPT="Name/value pairs table" CMPTYPE="1" MTDTYPE="0" EDITORDER="7 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="TIHTTPNVP" PAROPTIONL="X"/>
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="AUTHENTICATE" SCONAME="R_AUTH_OK" VERSION="1" LANGU="E" DESCRIPT="Ok = &apos;X&apos;, not Ok = &apos; &apos;" CMPTYPE="1" MTDTYPE="0" EDITORDER="8 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ABAP_BOOL"/>
-   <source>METHOD authenticate.
+  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_CREATE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="1 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_CREATE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_DELETE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="4 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_DELETE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_READ" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="2 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_READ" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <attribute CLSNAME="ZCL_REST_HANDLER" CMPNAME="O_RESOURCE_UPDATE" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" EXPOSURE="2" STATE="1" EDITORDER="3 " ATTDECLTYP="0" ATTEXPVIRT="0" TYPTYPE="3" TYPE="ZIF_REST_RESOURCE_UPDATE" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <interfaceMethod CLSNAME="ZCL_REST_HANDLER" CPDNAME="IF_HTTP_EXTENSION~HANDLE_REQUEST">
+   <source>METHOD if_http_extension~handle_request.
 
-  &quot; Objects
-  DATA: lo_usw TYPE REF TO zcl_usw.
+  FIELD-SYMBOLS: &lt;fs_request&gt;  TYPE ANY,
+                 &lt;fs_response&gt; TYPE ANY.
 
-  lo_usw = zcl_usw=&gt;get_instance( ).
+* Anonymous data objects
+  DATA: request       TYPE REF TO data,
+        response      TYPE REF TO data.
 
-  &quot; User/password auth
-  IF ( NOT i_id IS INITIAL ) AND ( NOT i_password IS INITIAL ).
+* Objects
+  DATA: lo_rest_auth  TYPE REF TO zcl_rest_auth,
+        lo_ex         TYPE REF TO cx_root.
 
-    lo_usw-&gt;check_credentials(
-      EXPORTING
-        i_id       = i_id
-        i_objtype  = i_objtype
-        i_password = i_password
-      RECEIVING
-        r_auth_ok  = r_auth_ok
-    ).
+* Internal tables
+  DATA: t_url_params  TYPE string_table,
+        t_nvp         TYPE tihttpnvp.
 
-    IF r_auth_ok = &apos;X&apos;.
+* Elementary
+  DATA: verb          TYPE string,
+        path_info     TYPE string,
+        app           TYPE string,
+        resource      TYPE string,
+        app_aux       TYPE string,
+        resource_aux  TYPE string,
+        request_type  TYPE string,
+        response_type TYPE string,
+        userid        TYPE string,
+        password      TYPE string,
+        token         TYPE string,
+        token_co      TYPE string,
+        auth_ok(1)    TYPE c.
 
-      lo_usw-&gt;exec_user_switch(
-        EXPORTING
-          i_id        = i_id
-          i_objtype   = i_objtype
-        RECEIVING
-          r_switch_ok = r_auth_ok
-      ).
+* Retrieving the request method (POST, GET, PUT, DELETE)
+  verb = server-&gt;request-&gt;get_header_field( name = &apos;~request_method&apos; ).
 
+* Only methods GET, POST, PUT, DELETE are allowed
+  IF ( verb NE &apos;GET&apos; ) AND ( verb NE &apos;POST&apos; ) AND
+     ( verb NE &apos;PUT&apos; ) AND ( verb NE &apos;DELETE&apos; ).
+
+    me-&gt;method_not_allowed( server ).
+
+    EXIT.
+
+  ENDIF.
+
+* Get all header fields received
+  server-&gt;request-&gt;get_form_fields_cs( CHANGING fields = t_nvp ).
+
+* Retrieving the parameters passed in the URL
+  path_info = server-&gt;request-&gt;get_header_field( name = &apos;~path_info&apos; ).
+
+  SHIFT path_info LEFT BY 1 PLACES.
+
+* Populate an internal table with all URL parameters received
+  SPLIT path_info AT &apos;/&apos; INTO TABLE t_url_params.
+
+* The FIRST URL parameter MUST BE the APPLICATION identifier
+  READ TABLE t_url_params INTO app INDEX 1.
+
+* The SECOND URL parameter MUST BE the RESOURCE identifier
+  READ TABLE t_url_params INTO resource INDEX 2.
+
+  IF app IS INITIAL.
+
+    app_aux = server-&gt;request-&gt;get_form_field(&apos;app&apos;).
+
+    IF NOT app_aux IS INITIAL.
+      app = app_aux.
+    ELSE.
+      me-&gt;application_not_found( server ).
+      EXIT.
     ENDIF.
 
-  ELSEIF ( NOT i_token IS INITIAL ) AND ( NOT i_token_co IS INITIAL ).
+  ENDIF.
 
-    lo_usw-&gt;check_token(
+  IF resource IS INITIAL.
+
+    resource_aux = server-&gt;request-&gt;get_form_field(&apos;resource&apos;).
+
+    IF NOT resource_aux IS INITIAL.
+      resource = resource_aux.
+    ELSE.
+      me-&gt;resource_not_found( server ).
+      EXIT.
+    ENDIF.
+
+  ENDIF.
+
+  TRANSLATE app TO UPPER CASE.
+  TRANSLATE resource TO UPPER CASE.
+
+***** Just uncomment this block code if you want to use the user switch authentication mechanism
+*****  lo_rest_auth = zcl_rest_auth=&gt;get_instance( ).
+*****
+*****  userid   = server-&gt;request-&gt;get_form_field(&apos;uid&apos;).
+*****  password = server-&gt;request-&gt;get_form_field(&apos;pwd&apos;).
+*****  token    = server-&gt;request-&gt;get_form_field(&apos;tkn&apos;).
+*****  token_co = server-&gt;request-&gt;get_form_field(&apos;tknco&apos;).
+*****
+*****  lo_rest_auth-&gt;authenticate(
+*****    EXPORTING
+*****      i_id       = userid
+*****      i_objtype  = &apos;ZUSWIU&apos;
+*****      i_password = password
+*****      i_token    = token
+*****      i_token_co = token_co
+*****      i_app      = app
+*****      i_t_nvp    = t_nvp
+*****    RECEIVING
+*****      r_auth_ok  = auth_ok
+*****  ).
+*****
+*****  IF auth_ok IS INITIAL.
+*****
+*****    me-&gt;unauthorized( server ).
+*****
+*****    EXIT.
+*****
+*****  ENDIF.
+
+  &quot; Try to find the resource. If found, then an instance of it is created)
+  me-&gt;get_rest_resource(
+    EXPORTING i_resource = resource
+              i_verb = verb
+  ).
+
+  CASE verb.
+
+    WHEN &apos;POST&apos;.
+
+      IF NOT me-&gt;o_resource_create IS BOUND.
+        me-&gt;resource_not_found( server ).
+        EXIT.
+      ENDIF.
+
+      TRY.
+
+          request_type  = me-&gt;o_resource_create-&gt;get_request_type( i_app = app ).
+
+          response_type = me-&gt;o_resource_create-&gt;get_response_type( i_app = app ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; Do nothing ...
+
+      ENDTRY.
+
+      IF NOT request_type IS INITIAL.
+
+        CREATE DATA request TYPE (request_type).
+
+        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
+
+        me-&gt;transfer_request_data(
+          EXPORTING
+            i_t_nvp    = t_nvp
+          CHANGING
+            ch_request = &lt;fs_request&gt;
+        ).
+
+      ENDIF.
+
+      IF response_type IS INITIAL.
+        &quot; Falls back to the basic response type
+        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
+      ENDIF.
+
+      CREATE DATA response TYPE (response_type).
+      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
+
+      IF &lt;fs_request&gt; IS ASSIGNED.
+
+        me-&gt;o_resource_create-&gt;create(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+            i_request  = &lt;fs_request&gt;
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ELSE.
+
+        me-&gt;o_resource_create-&gt;create(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ENDIF.
+
+    WHEN &apos;GET&apos;.
+
+      IF NOT me-&gt;o_resource_read IS BOUND.
+        me-&gt;resource_not_found( server ).
+        EXIT.
+      ENDIF.
+
+      TRY.
+
+          request_type  = me-&gt;o_resource_read-&gt;get_request_type( i_app = app ).
+
+          response_type = me-&gt;o_resource_read-&gt;get_response_type( i_app = app ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; Do nothing ...
+
+      ENDTRY.
+
+      IF NOT request_type IS INITIAL.
+
+        CREATE DATA request TYPE (request_type).
+
+        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
+
+        me-&gt;transfer_request_data(
+          EXPORTING
+            i_t_nvp    = t_nvp
+          CHANGING
+            ch_request = &lt;fs_request&gt;
+        ).
+
+      ENDIF.
+
+      IF response_type IS INITIAL.
+        &quot; Falls back to the basic response type
+        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
+      ENDIF.
+
+      CREATE DATA response TYPE (response_type).
+      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
+
+      IF &lt;fs_request&gt; IS ASSIGNED.
+
+        me-&gt;o_resource_read-&gt;read(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+            i_request  = &lt;fs_request&gt;
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ELSE.
+
+        me-&gt;o_resource_read-&gt;read(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ENDIF.
+
+    WHEN &apos;PUT&apos;.
+
+      IF NOT me-&gt;o_resource_update IS BOUND.
+        me-&gt;resource_not_found( server ).
+        EXIT.
+      ENDIF.
+
+      TRY.
+
+          request_type  = me-&gt;o_resource_update-&gt;get_request_type( ).
+
+          response_type = me-&gt;o_resource_update-&gt;get_response_type( ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; Do nothing ...
+
+      ENDTRY.
+
+      IF NOT request_type IS INITIAL.
+
+        CREATE DATA request TYPE (request_type).
+
+        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
+
+        me-&gt;transfer_request_data(
+          EXPORTING
+            i_t_nvp    = t_nvp
+          CHANGING
+            ch_request = &lt;fs_request&gt;
+        ).
+
+      ENDIF.
+
+      IF response_type IS INITIAL.
+        &quot; Falls back to the basic response type
+        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
+      ENDIF.
+
+      CREATE DATA response TYPE (response_type).
+      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
+
+      IF &lt;fs_request&gt; IS ASSIGNED.
+
+        me-&gt;o_resource_update-&gt;update(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+            i_request  = &lt;fs_request&gt;
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ELSE.
+
+        me-&gt;o_resource_update-&gt;update(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ENDIF.
+
+    WHEN &apos;DELETE&apos;.
+
+      IF NOT me-&gt;o_resource_delete IS BOUND.
+        me-&gt;resource_not_found( server ).
+        EXIT.
+      ENDIF.
+
+      TRY.
+
+          request_type  = me-&gt;o_resource_delete-&gt;get_request_type( ).
+          response_type = me-&gt;o_resource_delete-&gt;get_response_type( ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; Do nothing ...
+
+      ENDTRY.
+
+      IF NOT request_type IS INITIAL.
+
+        CREATE DATA request TYPE (request_type).
+
+        ASSIGN request-&gt;*  TO &lt;fs_request&gt;.
+
+        me-&gt;transfer_request_data(
+          EXPORTING
+            i_t_nvp    = t_nvp
+          CHANGING
+            ch_request = &lt;fs_request&gt;
+        ).
+
+      ENDIF.
+
+      IF response_type IS INITIAL.
+        &quot; Falls back to the basic response type
+        response_type = &apos;ZST_REST_RESPONSE_BASIC&apos;.
+      ENDIF.
+
+      CREATE DATA response TYPE (response_type).
+      ASSIGN response-&gt;* TO &lt;fs_response&gt;.
+
+      IF &lt;fs_request&gt; IS ASSIGNED.
+
+        me-&gt;o_resource_delete-&gt;delete(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+            i_request  = &lt;fs_request&gt;
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ELSE.
+
+        me-&gt;o_resource_delete-&gt;delete(
+          EXPORTING
+            i_t_nvp    = t_nvp
+            i_app      = app
+          IMPORTING
+            e_response = &lt;fs_response&gt;
+        ).
+
+      ENDIF.
+
+  ENDCASE.
+
+  IF &lt;fs_response&gt; IS ASSIGNED.
+
+    me-&gt;set_response(
       EXPORTING
-        i_id       = i_id
-        i_objtype  = i_objtype
-        i_app      = i_app
-        i_token    = i_token
-        i_token_co = i_token_co
-        i_t_nvp    = i_t_nvp
-      RECEIVING
-        r_token_ok = r_auth_ok
+        i_server   = server
+        i_response = &lt;fs_response&gt;
+*       I_TYPE     = &apos;JSON&apos; &quot; Default = JSON
     ).
 
-    IF r_auth_ok = &apos;X&apos;.
+  ENDIF.
 
-      lo_usw-&gt;exec_user_switch(
-        EXPORTING
-          i_id        = i_id
-          i_objtype   = i_objtype
-        RECEIVING
-          r_switch_ok = r_auth_ok
-      ).
+ENDMETHOD.</source>
+  </interfaceMethod>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="APPLICATION_NOT_FOUND" VERSION="1" LANGU="E" DESCRIPT="Application resource not found" EXPOSURE="0" STATE="1" EDITORDER="5 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="APPLICATION_NOT_FOUND" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
+   <source>METHOD APPLICATION_NOT_FOUND.
 
-    ENDIF.
+  i_server-&gt;response-&gt;set_status(
+    code = 404
+    reason = &apos;Application not found&apos;
+  ).
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" VERSION="1" LANGU="E" DESCRIPT="Get the REST resource" EXPOSURE="0" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" SCONAME="I_RESOURCE" VERSION="1" LANGU="E" DESCRIPT="REST Resource" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="GET_REST_RESOURCE" SCONAME="I_VERB" VERSION="1" LANGU="E" DESCRIPT="POST, GET, PUT, DELETE" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING"/>
+   <source>METHOD get_rest_resource.
+
+  DATA: t_vseoifimpl TYPE STANDARD TABLE OF vseoifimpl.
+
+  DATA: s_vseoifimpl TYPE vseoifimpl.
+
+  DATA: class_name TYPE vseoifimpl-clsname,
+        refclsname TYPE vseoifimpl-refclsname.
+
+  CONCATENATE &apos;%&apos; i_resource INTO class_name.
+
+  CHECK NOT i_resource IS INITIAL.
+
+  CASE i_verb.
+    WHEN &apos;POST&apos;.
+      refclsname = &apos;ZIF_REST_RESOURCE_CREATE&apos;.
+    WHEN &apos;GET&apos;.
+      refclsname = &apos;ZIF_REST_RESOURCE_READ&apos;.
+    WHEN &apos;PUT&apos;.
+      refclsname = &apos;ZIF_REST_RESOURCE_UPDATE&apos;.
+    WHEN &apos;DELETE&apos;.
+      refclsname = &apos;ZIF_REST_RESOURCE_DELETE&apos;.
+  ENDCASE.
+
+  SELECT clsname refclsname version state FROM vseoifimpl
+    INTO TABLE t_vseoifimpl
+    WHERE clsname LIKE class_name AND
+          refclsname = refclsname AND
+          version    = &apos;1&apos; AND
+          state      = &apos;1&apos;.
+
+  IF NOT t_vseoifimpl[] IS INITIAL.
+
+    READ TABLE t_vseoifimpl INTO s_vseoifimpl INDEX 1.
+
+    CASE i_verb.
+      WHEN &apos;POST&apos;.
+        CREATE OBJECT me-&gt;o_resource_create
+          TYPE (s_vseoifimpl-clsname).
+      WHEN &apos;GET&apos;.
+        CREATE OBJECT me-&gt;o_resource_read
+          TYPE (s_vseoifimpl-clsname).
+      WHEN &apos;PUT&apos;.
+        CREATE OBJECT me-&gt;o_resource_update
+          TYPE (s_vseoifimpl-clsname).
+      WHEN &apos;DELETE&apos;.
+        CREATE OBJECT me-&gt;o_resource_delete
+          TYPE (s_vseoifimpl-clsname).
+    ENDCASE.
 
   ENDIF.
 
 ENDMETHOD.</source>
   </method>
-  <method CLSNAME="ZCL_REST_AUTH" CMPNAME="GET_INSTANCE" VERSION="1" LANGU="E" DESCRIPT="Return instance (singleton)" EXPOSURE="2" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
-   <parameter CLSNAME="ZCL_REST_AUTH" CMPNAME="GET_INSTANCE" SCONAME="R_REF" VERSION="1" LANGU="E" DESCRIPT="REST API - User Authentication" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="3" TYPE="ZCL_REST_AUTH"/>
-   <source>METHOD get_instance.
-  IF ref IS NOT BOUND.
-    CREATE OBJECT ref.
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="METHOD_NOT_ALLOWED" VERSION="1" LANGU="E" DESCRIPT="Method (HTTP Verb) not allowed" EXPOSURE="0" STATE="1" EDITORDER="3 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="METHOD_NOT_ALLOWED" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
+   <source>METHOD METHOD_NOT_ALLOWED.
+
+  &quot; For any other method the service should return the error code 405
+  i_server-&gt;response-&gt;set_status(
+    code = &apos;405&apos;
+    reason = &apos;Method not allowed&apos;
+  ).
+
+  i_server-&gt;response-&gt;set_header_field(
+    name = &apos;Allow&apos;
+    value = &apos;POST, GET, PUT, DELETE&apos;
+  ).
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="RESOURCE_NOT_FOUND" VERSION="1" LANGU="E" DESCRIPT="REST resource not found" EXPOSURE="0" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="RESOURCE_NOT_FOUND" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
+   <source>METHOD RESOURCE_NOT_FOUND.
+
+  i_server-&gt;response-&gt;set_status(
+    code = 404
+    reason = &apos;Resource not found&apos;
+  ).
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Set response" EXPOSURE="0" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Response" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_TYPE" VERSION="1" LANGU="E" DESCRIPT="Response type" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="CHAR30" PARVALUE="&apos;JSON&apos;"/>
+   <source>METHOD SET_RESPONSE.
+
+  &quot; Objects
+  DATA: json_doc TYPE REF TO zcl_json_document.
+
+  &quot; Variables
+  DATA: json_response TYPE string.
+
+  IF i_type = &apos;JSON&apos;.
+
+    json_doc = zcl_json_document=&gt;create_with_data( i_response ).
+
+    json_response = json_doc-&gt;get_json( ).
+
+*   Sets the content type of the response
+    i_server-&gt;response-&gt;set_header_field(
+      name = &apos;Content-Type&apos;
+      value = &apos;application/json; charset=iso-8859-1&apos;
+    ).
+
+*   Returns the results in JSON format
+    i_server-&gt;response-&gt;set_cdata( data = json_response ).
+
   ENDIF.
-  r_ref = ref.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" VERSION="1" LANGU="E" DESCRIPT="Transfer request data" EXPOSURE="0" STATE="1" EDITORDER="6 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" SCONAME="I_T_NVP" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) Table Name/Value Pairs" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="TIHTTPNVP"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="TRANSFER_REQUEST_DATA" SCONAME="CH_REQUEST" VERSION="1" LANGU="E" DESCRIPT="Request data" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="2" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
+   <source>METHOD transfer_request_data.
+
+  FIELD-SYMBOLS: &lt;fs&gt; TYPE ANY.
+
+  &quot; Objects
+  DATA: o_ex TYPE REF TO cx_root.
+
+  &quot; Strcutures
+  DATA: s_nvp LIKE LINE OF i_t_nvp.
+
+  LOOP AT i_t_nvp INTO s_nvp.
+
+    TRY.
+
+        TRANSLATE s_nvp-name TO UPPER CASE.
+
+        ASSIGN COMPONENT s_nvp-name OF STRUCTURE ch_request TO &lt;fs&gt;.
+
+        IF &lt;fs&gt; IS ASSIGNED.
+          &lt;fs&gt; = s_nvp-value.
+          UNASSIGN &lt;fs&gt;.
+        ENDIF.
+
+      CATCH cx_root INTO o_ex.
+        &quot; TODO: handle conversion errors
+    ENDTRY.
+
+  ENDLOOP.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="UNAUTHORIZED" VERSION="1" LANGU="E" DESCRIPT="User unauthorized" EXPOSURE="0" STATE="1" EDITORDER="7 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="UNAUTHORIZED" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
+   <source>METHOD UNAUTHORIZED.
+
+  i_server-&gt;response-&gt;set_status(
+    code   = &apos;401&apos;
+    reason = &apos;Unauthorized&apos;
+  ).
+
+  i_server-&gt;response-&gt;set_header_field(
+    name  = &apos;Reason&apos;
+    value = &apos;Unauthorized&apos;
+  ).
+
 ENDMETHOD.</source>
   </method>
  </CLAS>
@@ -1952,10 +1979,10 @@ ENDMETHOD.</source>
   <dd07v DOMNAME="ZDO_RESTAPI_REFUSRONLY" VALPOS="0001" DDLANGUAGE="E" DDTEXT="No"/>
   <dd07v DOMNAME="ZDO_RESTAPI_REFUSRONLY" VALPOS="0002" DDLANGUAGE="E" DOMVALUE_L="X" DDTEXT="Yes"/>
  </DOMA>
- <DTEL ROLLNAME="ZDE_RESTAPI_REFUSRONLY" DDLANGUAGE="E" DOMNAME="ZDO_RESTAPI_REFUSRONLY" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DDTEXT="REST API  - Flag ref. user only" REPTEXT="Ref. User Only" SCRTEXT_S="Ref. User" SCRTEXT_M="Ref. User Only" SCRTEXT_L="Reference User Only" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000001" DECIMALS="000000" OUTPUTLEN="000001" VALEXI="X" REFKIND="D">
+ <DTEL ROLLNAME="ZPBR_CPFNR" DDLANGUAGE="E" ROUTPUTLEN="000000" HEADLEN="45" SCRLEN1="10" SCRLEN2="15" SCRLEN3="25" DDTEXT="Sole Proprietor&apos;s Registry number (CPF)" REPTEXT="Sole Proprietor&apos;s Registry number (CPF)" SCRTEXT_S="CPF number" SCRTEXT_M="CPF number" SCRTEXT_L="CPF number" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000015" DECIMALS="000000" OUTPUTLEN="000015">
   <tpara/>
  </DTEL>
- <DTEL ROLLNAME="ZPBR_CPFNR" DDLANGUAGE="E" ROUTPUTLEN="000000" HEADLEN="45" SCRLEN1="10" SCRLEN2="15" SCRLEN3="25" DDTEXT="Sole Proprietor&apos;s Registry number (CPF)" REPTEXT="Sole Proprietor&apos;s Registry number (CPF)" SCRTEXT_S="CPF number" SCRTEXT_M="CPF number" SCRTEXT_L="CPF number" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000015" DECIMALS="000000" OUTPUTLEN="000015">
+ <DTEL ROLLNAME="ZDE_RESTAPI_REFUSRONLY" DDLANGUAGE="E" DOMNAME="ZDO_RESTAPI_REFUSRONLY" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DDTEXT="REST API  - Flag ref. user only" REPTEXT="Ref. User Only" SCRTEXT_S="Ref. User" SCRTEXT_M="Ref. User Only" SCRTEXT_L="Reference User Only" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000001" DECIMALS="000000" OUTPUTLEN="000001" VALEXI="X" REFKIND="D">
   <tpara/>
  </DTEL>
  <DTEL ROLLNAME="ZDE_RESTAPI_PRIVATE_KEY" DDLANGUAGE="E" ROUTPUTLEN="000000" HEADLEN="32" SCRLEN1="10" SCRLEN2="15" SCRLEN3="25" DDTEXT="Internet User Private Key - Authentication by token" REPTEXT="Private Key" SCRTEXT_S="Priv.Key" SCRTEXT_M="Private Key" SCRTEXT_L="Internet User Private Key" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000032" DECIMALS="000000" OUTPUTLEN="000032">
@@ -1970,7 +1997,7 @@ ENDMETHOD.</source>
  <DTEL ROLLNAME="ZDE_RESTAPI_APP_ID" DDLANGUAGE="E" ROUTPUTLEN="000000" HEADLEN="23" SCRLEN1="10" SCRLEN2="15" SCRLEN3="23" DDTEXT="REST API Application ID" REPTEXT="REST API Application ID" SCRTEXT_S="App ID" SCRTEXT_M="REST API App ID" SCRTEXT_L="REST API Application ID" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000030" DECIMALS="000000" OUTPUTLEN="000030">
   <tpara/>
  </DTEL>
- <INTF CLSNAME="ZIF_REST_RESOURCE_READ" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource Create Method" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" UNICODE="X">
+ <INTF CLSNAME="ZIF_REST_RESOURCE_READ" VERSION="1" LANGU="E" DESCRIPT="REST API - Resource READ Method" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" UNICODE="X">
   <method CLSNAME="ZIF_REST_RESOURCE_READ" CMPNAME="GET_REQUEST_TYPE" VERSION="1" LANGU="E" DESCRIPT="Returns read method request type" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
    <parameter CLSNAME="ZIF_REST_RESOURCE_READ" CMPNAME="GET_REQUEST_TYPE" SCONAME="I_APP" VERSION="1" LANGU="E" DESCRIPT="Application" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="STRING" PAROPTIONL="X"/>
    <parameter CLSNAME="ZIF_REST_RESOURCE_READ" CMPNAME="GET_REQUEST_TYPE" SCONAME="R_REQUEST_TYPE" VERSION="1" LANGU="E" DESCRIPT="Request type" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="TYPENAME"/>
@@ -2794,7 +2821,7 @@ ENDCLASS.                    &quot;lcl_application IMPLEMENTATION</source>
  <PROG NAME="ZRUSW01_DEF" VARCL="X" SUBC="I" LEVL="700" RMAND="100" RLOAD="P" UCCHECK="X">
   <textPool>
    <language SPRAS="E">
-    <textElement ID="R" ENTRY="Local class definition" LENGTH="28 "/>
+    <textElement ID="R" ENTRY="Local class definitions" LENGTH="28 "/>
    </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
@@ -2865,7 +2892,7 @@ SELECTION-SCREEN END OF BLOCK b2.</source>
  <PROG NAME="ZRUSW01" VARCL="X" SUBC="1" RMAND="100" RLOAD="E" FIXPT="X" UCCHECK="X">
   <textPool>
    <language SPRAS="E">
-    <textElement ID="I" KEY="001" ENTRY="Selection criteria" LENGTH="21 "/>
+    <textElement ID="I" KEY="001" ENTRY="Parâmetros de seleção" LENGTH="21 "/>
     <textElement ID="I" KEY="002" ENTRY="No record selected" LENGTH="30 "/>
     <textElement ID="I" KEY="003" ENTRY="Action is not supported" LENGTH="30 "/>
     <textElement ID="I" KEY="004" ENTRY="Action canceled" LENGTH="20 "/>
@@ -4834,12 +4861,6 @@ START-OF-SELECTION.
   <dd03p TABNAME="ZSTUSWDU_ALV" FIELDNAME="PASSWORD" DDLANGUAGE="E" POSITION="0004" ROLLNAME="WWWPASS" ADMINFIELD="0" INTTYPE="C" INTLEN="000032" DOMNAME="WWWPWD" ROUTPUTLEN="000000" HEADLEN="16" SCRLEN1="10" SCRLEN2="15" SCRLEN3="30" DTELMASTER="D" DATATYPE="CHAR" LENG="000016" OUTPUTLEN="000016" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Password for Internet user" REPTEXT="Password" SCRTEXT_S="Password" SCRTEXT_M="Password" SCRTEXT_L="Password for Internet user" DOMNAME3L="WWWPWD" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZSTUSWDU_ALV" FIELDNAME="CELLSTYLES" DDLANGUAGE="E" POSITION="0005" ROLLNAME="LVC_T_STYL" ADMINFIELD="0" INTLEN="000000" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="TTYP" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  TTYPL" MASKLEN="0000" DDTEXT="ALV Control: Style Table for Cells" DEPTH="00" COMPTYPE="L" EXCLASS="0" DBPOSITION="0000"/>
  </TABL>
- <TABL TABNAME="ZST_REST_RESPONSE_BASIC" DDLANGUAGE="E" TABCLASS="INTTAB" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" DDTEXT="REST API Basic Response" AUTHCLASS="00" PROZPUFF="000" EXCLASS="1">
-  <dd09l AS4VERS="0000" SCHFELDANZ="000"/>
-  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="SUCCESS" DDLANGUAGE="E" POSITION="0001" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRG" MASKLEN="0000" DDTEXT="True or False" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="CODE" DDLANGUAGE="E" POSITION="0002" ADMINFIELD="0" INTTYPE="X" INTLEN="000002" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="INT2" LENG="000005" OUTPUTLEN="000000" DECIMALS="000000" MASK="  INT2" MASKLEN="0000" DDTEXT="HTTP status code" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="MSG" DDLANGUAGE="E" POSITION="0003" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRG" MASKLEN="0000" DDTEXT="Return message" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
- </TABL>
  <TABL TABNAME="ZTBUSWDU" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="User Switch - Dialog Users" AUTHCLASS="00" MAINFLAG="X" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
   <dd09l TABNAME="ZTBUSWDU" AS4LOCAL="A" AS4VERS="0000" TABKAT="0" TABART="APPL1" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
   <dd03p TABNAME="ZTBUSWDU" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
@@ -4860,6 +4881,14 @@ START-OF-SELECTION.
   <tstcc TCODE="ZTUSW00" S_WIN32="X"/>
   <tstcp/>
   <rsstcd ST_PROG="X" DEVCLASS="$TMP"/>
+ </TRAN>
+ <TRAN TCODE="ZTUSW02" DYPNO="0000" CINFO="02">
+  <tstct SPRSL="E" TCODE="ZTUSW02" TTEXT="User Switch Setup - Cluster"/>
+  <tstcc TCODE="ZTUSW02" S_WIN32="X"/>
+  <tstcp TCODE="ZTUSW02" PARAM="/*SM34 VCLDIR-VCLNAME=ZVCUSW;UPDATE=X;"/>
+  <rsstcd ST_TCODE="X" ST_SKIP_1="X" CALL_TCODE="SM34" DEVCLASS="$TMP"/>
+  <rsparam FIELD="VCLDIR-VCLNAME" VALUE="ZVCUSW"/>
+  <rsparam FIELD="UPDATE" VALUE="X"/>
  </TRAN>
  <TRAN TCODE="ZTUSW01" PGMNA="ZRUSW01" DYPNO="1000" CINFO="80">
   <tstct SPRSL="E" TCODE="ZTUSW01" TTEXT="Internet user password maintenance"/>
