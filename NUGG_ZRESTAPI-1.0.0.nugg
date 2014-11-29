@@ -13,14 +13,26 @@
   <textPool>
    <language SPRAS="E"/>
   </textPool>
+  <interfaceMethod CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" CPDNAME="ZIF_REST_RESOURCE_READ~GET_REQUEST_TYPE">
+   <source>METHOD zif_rest_resource_read~get_request_type.
+  r_request_type = &apos;ZST_HELLO_REQUEST&apos;.
+ENDMETHOD.</source>
+  </interfaceMethod>
   <interfaceMethod CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" CPDNAME="ZIF_REST_RESOURCE_READ~READ">
    <source>METHOD zif_rest_resource_read~read.
 
-  DATA: ls_response TYPE zst_rest_response_basic.
+  DATA: ls_request  TYPE zst_hello_request,
+        ls_response TYPE zst_rest_response_basic.
+
+  ls_request = i_request.
 
   ls_response-success = &apos;true&apos;.
-  ls_response-msg     = &apos;Hello World&apos;.
-  ls_response-code    = 200.
+
+  CONCATENATE &apos;Hello&apos; ls_request-name
+    INTO ls_response-msg
+    SEPARATED BY space.
+
+  ls_response-code  = 200.
 
   e_response = ls_response.
 
@@ -1431,8 +1443,28 @@ ENDMETHOD.</source>
   verb = server-&gt;request-&gt;get_header_field( name = &apos;~request_method&apos; ).
 
 * Only methods GET, POST, PUT, DELETE are allowed
-  IF ( verb NE &apos;GET&apos; ) AND ( verb NE &apos;POST&apos; ) AND
-     ( verb NE &apos;PUT&apos; ) AND ( verb NE &apos;DELETE&apos; ).
+  IF ( verb &lt;&gt; &apos;GET&apos; ) AND ( verb &lt;&gt; &apos;POST&apos; ) AND
+     ( verb &lt;&gt; &apos;PUT&apos; ) AND ( verb &lt;&gt; &apos;DELETE&apos; ).
+
+    &quot; From mozilla developer network...
+    &quot; / &apos;preflighted&apos; requests first send an HTTP request by the OPTIONS method to the resource on the other domain,
+    &quot; in order to determine whether the actual request is safe to send. Cross-site requests are preflighted like
+    &quot; this since they may have implications to user data. /
+    IF verb = &apos;OPTIONS&apos;.
+
+      &quot; From mozilla developer network...
+      &quot; / The Cross-Origin Resource Sharing standard works by adding new HTTP headers
+      &quot; that allow servers to describe the set of origins that are permitted to read
+      &quot; that information using a web browser. /
+      server-&gt;response-&gt;set_header_field(
+          EXPORTING
+              name = &apos;Access-Control-Allow-Origin&apos;
+              value = &apos;*&apos;
+      ).
+
+      EXIT.
+
+    ENDIF.
 
     me-&gt;method_not_allowed( server ).
 
@@ -1905,6 +1937,16 @@ ENDMETHOD.</source>
   &quot; Variables
   DATA: json_response TYPE string.
 
+  &quot; From mozilla developer network...
+  &quot; / The Cross-Origin Resource Sharing standard works by adding new HTTP headers
+  &quot; that allow servers to describe the set of origins that are permitted to read
+  &quot; that information using a web browser /
+  i_server-&gt;response-&gt;set_header_field(
+      EXPORTING
+          name = &apos;Access-Control-Allow-Origin&apos;
+          value = &apos;*&apos;
+  ).
+
   IF i_type = &apos;JSON&apos;.
 
     json_doc = zcl_json_document=&gt;create_with_data( i_response ).
@@ -2153,7 +2195,7 @@ ENDMODULE.                 &quot; INI_COMP  OUTPUT</source>
  <PROG NAME="ZRUSW01_IMP" VARCL="X" SUBC="I" LEVL="700" RMAND="100" RLOAD="P" UCCHECK="X">
   <textPool>
    <language SPRAS="E">
-    <textElement ID="R" ENTRY="Local class implementation" LENGTH="28 "/>
+    <textElement ID="R" ENTRY="Local class implementaion" LENGTH="28 "/>
    </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
@@ -2821,7 +2863,7 @@ ENDCLASS.                    &quot;lcl_application IMPLEMENTATION</source>
  <PROG NAME="ZRUSW01_DEF" VARCL="X" SUBC="I" LEVL="700" RMAND="100" RLOAD="P" UCCHECK="X">
   <textPool>
    <language SPRAS="E">
-    <textElement ID="R" ENTRY="Local class definitions" LENGTH="28 "/>
+    <textElement ID="R" ENTRY="Local class definition" LENGTH="28 "/>
    </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
@@ -2892,7 +2934,7 @@ SELECTION-SCREEN END OF BLOCK b2.</source>
  <PROG NAME="ZRUSW01" VARCL="X" SUBC="1" RMAND="100" RLOAD="E" FIXPT="X" UCCHECK="X">
   <textPool>
    <language SPRAS="E">
-    <textElement ID="I" KEY="001" ENTRY="Parâmetros de seleção" LENGTH="21 "/>
+    <textElement ID="I" KEY="001" ENTRY="Selection criteria" LENGTH="21 "/>
     <textElement ID="I" KEY="002" ENTRY="No record selected" LENGTH="30 "/>
     <textElement ID="I" KEY="003" ENTRY="Action is not supported" LENGTH="30 "/>
     <textElement ID="I" KEY="004" ENTRY="Action canceled" LENGTH="20 "/>
@@ -4861,6 +4903,12 @@ START-OF-SELECTION.
   <dd03p TABNAME="ZSTUSWDU_ALV" FIELDNAME="PASSWORD" DDLANGUAGE="E" POSITION="0004" ROLLNAME="WWWPASS" ADMINFIELD="0" INTTYPE="C" INTLEN="000032" DOMNAME="WWWPWD" ROUTPUTLEN="000000" HEADLEN="16" SCRLEN1="10" SCRLEN2="15" SCRLEN3="30" DTELMASTER="D" DATATYPE="CHAR" LENG="000016" OUTPUTLEN="000016" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Password for Internet user" REPTEXT="Password" SCRTEXT_S="Password" SCRTEXT_M="Password" SCRTEXT_L="Password for Internet user" DOMNAME3L="WWWPWD" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZSTUSWDU_ALV" FIELDNAME="CELLSTYLES" DDLANGUAGE="E" POSITION="0005" ROLLNAME="LVC_T_STYL" ADMINFIELD="0" INTLEN="000000" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="TTYP" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  TTYPL" MASKLEN="0000" DDTEXT="ALV Control: Style Table for Cells" DEPTH="00" COMPTYPE="L" EXCLASS="0" DBPOSITION="0000"/>
  </TABL>
+ <TABL TABNAME="ZST_REST_RESPONSE_BASIC" DDLANGUAGE="E" TABCLASS="INTTAB" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" DDTEXT="REST API Basic Response" AUTHCLASS="00" PROZPUFF="000" EXCLASS="1">
+  <dd09l AS4VERS="0000" SCHFELDANZ="000"/>
+  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="SUCCESS" DDLANGUAGE="E" POSITION="0001" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRG" MASKLEN="0000" DDTEXT="True or False" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="CODE" DDLANGUAGE="E" POSITION="0002" ADMINFIELD="0" INTTYPE="X" INTLEN="000002" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="INT2" LENG="000005" OUTPUTLEN="000000" DECIMALS="000000" MASK="  INT2" MASKLEN="0000" DDTEXT="HTTP status code" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZST_REST_RESPONSE_BASIC" FIELDNAME="MSG" DDLANGUAGE="E" POSITION="0003" ADMINFIELD="0" INTTYPE="g" INTLEN="000008" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DATATYPE="STRG" LENG="000000" OUTPUTLEN="000000" DECIMALS="000000" MASK="  STRG" MASKLEN="0000" DDTEXT="Return message" DEPTH="00" EXCLASS="0" DBPOSITION="0000"/>
+ </TABL>
  <TABL TABNAME="ZTBUSWDU" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="User Switch - Dialog Users" AUTHCLASS="00" MAINFLAG="X" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
   <dd09l TABNAME="ZTBUSWDU" AS4LOCAL="A" AS4VERS="0000" TABKAT="0" TABART="APPL1" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
   <dd03p TABNAME="ZTBUSWDU" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
@@ -4881,14 +4929,6 @@ START-OF-SELECTION.
   <tstcc TCODE="ZTUSW00" S_WIN32="X"/>
   <tstcp/>
   <rsstcd ST_PROG="X" DEVCLASS="$TMP"/>
- </TRAN>
- <TRAN TCODE="ZTUSW02" DYPNO="0000" CINFO="02">
-  <tstct SPRSL="E" TCODE="ZTUSW02" TTEXT="User Switch Setup - Cluster"/>
-  <tstcc TCODE="ZTUSW02" S_WIN32="X"/>
-  <tstcp TCODE="ZTUSW02" PARAM="/*SM34 VCLDIR-VCLNAME=ZVCUSW;UPDATE=X;"/>
-  <rsstcd ST_TCODE="X" ST_SKIP_1="X" CALL_TCODE="SM34" DEVCLASS="$TMP"/>
-  <rsparam FIELD="VCLDIR-VCLNAME" VALUE="ZVCUSW"/>
-  <rsparam FIELD="UPDATE" VALUE="X"/>
  </TRAN>
  <TRAN TCODE="ZTUSW01" PGMNA="ZRUSW01" DYPNO="1000" CINFO="80">
   <tstct SPRSL="E" TCODE="ZTUSW01" TTEXT="Internet user password maintenance"/>
