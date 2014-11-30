@@ -10,10 +10,10 @@ An alternative solution to simplify the development of REST APIs on top of ICF.
  - [zJSON](https://github.com/se38/zJSON)
  
 ## Installation
-Import nugget NUGG_ZRESTAPI-x.x.x.nugg with [SAPlink](https://www.assembla.com/spaces/saplink/wiki/Home)
+See {z}restapi [Wiki](https://github.com/christianjianelli/zrestapi/wiki/Installation)
 
 ## Usage
-See {z}restapi [Wiki](https://github.com/christianjianelli/zrestapi/wiki)
+See {z}restapi [Wiki](https://github.com/christianjianelli/zrestapi/wiki/Usage)
 
 ## License
 This software is published under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
