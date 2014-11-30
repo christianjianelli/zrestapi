@@ -9,7 +9,7 @@ An alternative solution to simplify the development of REST APIs on top of ICF.
  - [SAPLink](https://www.assembla.com/spaces/saplink/wiki/Home)
  - [zJSON](https://github.com/se38/zJSON)
  
-## Installation zJSON
+## Installation
 Import nugget NUGG_ZRESTAPI-x.x.x.nugg with [SAPlink](https://www.assembla.com/spaces/saplink/wiki/Home)
 
 ## Usage
