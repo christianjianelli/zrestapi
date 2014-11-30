@@ -15,26 +15,26 @@
   </textPool>
   <interfaceMethod CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" CPDNAME="ZIF_REST_RESOURCE_READ~GET_REQUEST_TYPE">
    <source>METHOD zif_rest_resource_read~get_request_type.
-  r_request_type = &apos;ZST_HELLO_REQUEST&apos;.
+  &quot; r_request_type = &apos;ZST_HELLO_REQUEST&apos;.
 ENDMETHOD.</source>
   </interfaceMethod>
   <interfaceMethod CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" CPDNAME="ZIF_REST_RESOURCE_READ~READ">
    <source>METHOD zif_rest_resource_read~read.
 
-  DATA: ls_request  TYPE zst_hello_request,
-        ls_response TYPE zst_rest_response_basic.
+  &quot; DATA: ls_request  TYPE zst_hello_request,
+  &quot;       ls_response TYPE zst_rest_response_basic.
 
-  ls_request = i_request.
+  &quot; ls_request = i_request.
 
-  ls_response-success = &apos;true&apos;.
+  &quot; ls_response-success = &apos;true&apos;.
 
-  CONCATENATE &apos;Hello&apos; ls_request-name
-    INTO ls_response-msg
-    SEPARATED BY space.
+  &quot; CONCATENATE &apos;Hello&apos; ls_request-name
+  &quot;   INTO ls_response-msg
+  &quot;   SEPARATED BY space.
 
-  ls_response-code  = 200.
+  &quot; ls_response-code  = 200.
 
-  e_response = ls_response.
+  &quot; e_response = ls_response.
 
 ENDMETHOD.</source>
   </interfaceMethod>
