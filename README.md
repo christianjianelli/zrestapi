@@ -1,4 +1,6 @@
-zrestapi
+{z}restapi
 ========
 
-SAP WebAS REST API
+Lightweight REST API for SAP WebAS
+
+An alternative solution to simplify the development of REST APIs on top of ICF.
