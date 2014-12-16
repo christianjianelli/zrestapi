@@ -1462,6 +1462,15 @@ ENDMETHOD.</source>
               value = &apos;*&apos;
       ).
 
+      &quot; From mozilla developer network...
+      &quot; Specifies the method or methods allowed when accessing the resource.
+      &quot; This is used in response to a preflight request.
+      server-&gt;response-&gt;set_header_field(
+          EXPORTING
+              name = &apos;Access-Control-Allow-Methods&apos;
+              value = &apos;GET, POST, UPDATE, DELETE, OPTIONS&apos;
+      ).
+
       EXIT.
 
     ENDIF.
