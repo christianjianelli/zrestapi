@@ -1468,7 +1468,16 @@ ENDMETHOD.</source>
       server-&gt;response-&gt;set_header_field(
           EXPORTING
               name = &apos;Access-Control-Allow-Methods&apos;
-              value = &apos;GET, POST, UPDATE, DELETE, OPTIONS&apos;
+              value = &apos;GET, POST, PUT, DELETE, OPTIONS&apos;
+      ).
+
+      &quot; From mozilla developer network...
+      &quot; Used when issuing a preflight request to let the server know what HTTP headers will be used
+      &quot; when the actual request is made.
+      server-&gt;response-&gt;set_header_field(
+          EXPORTING
+              name = &apos;Access-Control-Request-Headers&apos;
+              value = &apos;*&apos;
       ).
 
       EXIT.
