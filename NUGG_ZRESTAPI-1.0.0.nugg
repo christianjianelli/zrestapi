@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<nugget name="NUGG_ZRESTAPI-1.0.0">
+<nugget name="ZRESTAPI-1.0.0">
  <CLAS CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" VERSION="1" LANGU="E" DESCRIPT="Hello World" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
   <implementing CLSNAME="ZCL_REST_RESOURCE_HELLO_WORLD" REFCLSNAME="ZIF_REST_RESOURCE_READ" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1"/>
   <localImplementation>*&quot;* local class implementation for public class
@@ -145,19 +145,6 @@ ENDMETHOD.</source>
   <localMacros>*&quot;* use this source file for any macro definitions you need
 *&quot;* in the implementation part of the class</localMacros>
   <textPool>
-   <language SPRAS="E">
-    <textElement ID="I" KEY="001" ENTRY="Authentication failed. User and/or password is invalid" LENGTH="60 "/>
-    <textElement ID="I" KEY="002" ENTRY="Dear user," LENGTH="16 "/>
-    <textElement ID="I" KEY="003" ENTRY="Dear" LENGTH="7 "/>
-    <textElement ID="I" KEY="004" ENTRY="Please find below the password reset link." LENGTH="56 "/>
-    <textElement ID="I" KEY="005" ENTRY="Sincerely," LENGTH="15 "/>
-    <textElement ID="I" KEY="006" ENTRY="Helpdesk Team" LENGTH="17 "/>
-    <textElement ID="I" KEY="007" ENTRY="Password reset request" LENGTH="39 "/>
-    <textElement ID="I" KEY="008" ENTRY="The new password cannot be equal to the current one" LENGTH="60 "/>
-    <textElement ID="I" KEY="009" ENTRY="Reset password" LENGTH="19 "/>
-    <textElement ID="I" KEY="011" ENTRY="Please inform the new password and its confirmation" LENGTH="60 "/>
-    <textElement ID="I" KEY="012" ENTRY="The new password and its confirmation are not equal" LENGTH="60 "/>
-   </language>
    <language SPRAS="E">
     <textElement ID="I" KEY="001" ENTRY="Authentication failed. User and/or password is invalid" LENGTH="60 "/>
     <textElement ID="I" KEY="002" ENTRY="Dear user," LENGTH="16 "/>
@@ -1888,8 +1875,9 @@ ENDMETHOD.</source>
     me-&gt;set_response(
       EXPORTING
         i_server   = server
-        i_response = &lt;fs_response&gt;
 *       I_TYPE     = &apos;JSON&apos; &quot; Default = JSON
+      CHANGING
+        ch_response = &lt;fs_response&gt;
     ).
 
   ENDIF.
@@ -1994,8 +1982,8 @@ ENDMETHOD.</source>
   </method>
   <method CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Set response" EXPOSURE="0" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="0" BCMTDCAT="00" BCMTDSYN="0">
    <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_SERVER" VERSION="1" LANGU="E" DESCRIPT="HTTP Framework (iHTTP) HTTP Server" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="3" TYPE="IF_HTTP_SERVER"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Response" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
-   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_TYPE" VERSION="1" LANGU="E" DESCRIPT="Response type" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="CHAR30" PARVALUE="&apos;JSON&apos;"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="I_TYPE" VERSION="1" LANGU="E" DESCRIPT="Response type" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="CHAR30" PARVALUE="&apos;JSON&apos;"/>
+   <parameter CLSNAME="ZCL_REST_HANDLER" CMPNAME="SET_RESPONSE" SCONAME="CH_RESPONSE" VERSION="1" LANGU="E" DESCRIPT="Response" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="2" PARPASSTYP="1" TYPTYPE="1" TYPE="DATA"/>
    <source>METHOD set_response.
 
   FIELD-SYMBOLS: &lt;lfs_field&gt; TYPE ANY.
@@ -2011,7 +1999,7 @@ ENDMETHOD.</source>
 
   comp = &apos;CODE&apos;.
 
-  ASSIGN COMPONENT comp OF STRUCTURE i_response TO &lt;lfs_field&gt;.
+  ASSIGN COMPONENT comp OF STRUCTURE ch_response TO &lt;lfs_field&gt;.
 
   IF &lt;lfs_field&gt; IS ASSIGNED.
 
@@ -2023,7 +2011,7 @@ ENDMETHOD.</source>
 
       comp = &apos;MSG&apos;.
 
-      ASSIGN COMPONENT comp OF STRUCTURE i_response TO &lt;lfs_field&gt;.
+      ASSIGN COMPONENT comp OF STRUCTURE ch_response TO &lt;lfs_field&gt;.
 
       IF &lt;lfs_field&gt; IS ASSIGNED.
         reason = &lt;lfs_field&gt;.
@@ -2035,13 +2023,22 @@ ENDMETHOD.</source>
           reason = reason
       ).
 
+    ELSE.
+
+      i_server-&gt;response-&gt;get_status(
+        IMPORTING
+          code   = code
+      ).
+
+      &lt;lfs_field&gt; = code.
+
     ENDIF.
 
   ENDIF.
 
   IF i_type = &apos;JSON&apos;.
 
-    json_doc = zcl_json_document=&gt;create_with_data( i_response ).
+    json_doc = zcl_json_document=&gt;create_with_data( ch_response ).
 
     json_response = json_doc-&gt;get_json( ).
 
@@ -2196,29 +2193,26 @@ ENDMETHOD.</source>
   </method>
  </INTF>
  <MSAG ARBGB="ZREST" MASTERLANG="E" RESPUSER="SAPUSER" STEXT="REST API">
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="000" TEXT="&amp; &amp; &amp; &amp;"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="000" TEXT="&amp; &amp; &amp; &amp;"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="000" TEXT="&amp; &amp; &amp; &amp;"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="001" TEXT="&amp;"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="001" TEXT="&amp;"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="001" TEXT="&amp;"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="002" TEXT="Address can be maintained only for already saved entries"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="002" TEXT="Address can be maintained only for already saved entries"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="002" TEXT="Address can be maintained only for already saved entries"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="003" TEXT="Please select one entry to maintain"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="003" TEXT="Please select one entry to maintain"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="003" TEXT="Please select one entry to maintain"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="004" TEXT="Please select only one entry to maintain"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="004" TEXT="Please select only one entry to maintain"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="004" TEXT="Please select only one entry to maintain"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="005" TEXT="Duplicated entry &amp; &amp;"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="005" TEXT="Duplicated entry &amp; &amp;"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="005" TEXT="Duplicated entry &amp; &amp;"/>
-  <t100 SPRSL="E" ARBGB="ZREST" MSGNR="006" TEXT="Duplicated entry &amp;"/>
+  <t100 SPRSL="P" ARBGB="ZREST" MSGNR="006" TEXT="Duplicated entry &amp;"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="006" TEXT="Duplicated entry &amp; &amp; &amp;"/>
   <t100 SPRSL="E" ARBGB="ZREST" MSGNR="007" TEXT="Data saved"/>
   <t100t SPRSL="E" ARBGB="ZREST" STEXT="REST API"/>
-  <t100t SPRSL="E" ARBGB="ZREST" STEXT="REST API"/>
+  <t100t SPRSL="P" ARBGB="ZREST" STEXT="REST API"/>
  </MSAG>
  <PROG NAME="ZRUSW01_PAI" VARCL="X" SUBC="I" LEVL="700" RMAND="100" RLOAD="E" UCCHECK="X">
   <textPool>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="PAI Modules" LENGTH="11 "/>
-   </language>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="PAI Modules" LENGTH="11 "/>
    </language>
@@ -2259,9 +2253,6 @@ ENDMODULE.                 &quot; EXIT  INPUT</source>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="PBO Modules" LENGTH="11 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="PBO Modules" LENGTH="11 "/>
-   </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp;  Include           ZRUSW01_PBO
@@ -2294,9 +2285,6 @@ ENDMODULE.                 &quot; INI_COMP  OUTPUT</source>
   <textPool>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Local class implementation" LENGTH="26 "/>
-   </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Implementação classes locais" LENGTH="28 "/>
    </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
@@ -2456,7 +2444,7 @@ CLASS lcl_application IMPLEMENTATION.
 
       WHEN OTHERS.
 
-        &quot; Ação não suportada pela aplicação
+        &quot; Action not supported
         MESSAGE i000(zrest) WITH text-003 DISPLAY LIKE &apos;E&apos;.
 
     ENDCASE.
@@ -2966,9 +2954,6 @@ ENDCLASS.                    &quot;lcl_application IMPLEMENTATION</source>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Local class definitions" LENGTH="23 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Definição classes locais" LENGTH="28 "/>
-   </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp;  Include           ZRUSW01_DEF
@@ -3006,9 +2991,6 @@ ENDCLASS.                    &quot;lcl_application DEFINITION</source>
  </PROG>
  <PROG NAME="ZRUSW01_TOP" VARCL="X" SUBC="I" LEVL="700" RMAND="100" RLOAD="E" UCCHECK="X">
   <textPool>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Include TOP" LENGTH="11 "/>
-   </language>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Include TOP" LENGTH="11 "/>
    </language>
@@ -3057,23 +3039,6 @@ SELECTION-SCREEN END OF BLOCK b2.</source>
     <textElement ID="S" KEY="S_EMAIL" ENTRY="D       ." LENGTH="26 "/>
     <textElement ID="S" KEY="S_OBJID" ENTRY="D       ." LENGTH="27 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="I" KEY="001" ENTRY="Parâmetros de seleção" LENGTH="21 "/>
-    <textElement ID="I" KEY="002" ENTRY="Nenhum registro selecionado" LENGTH="27 "/>
-    <textElement ID="I" KEY="003" ENTRY="Ação não suportada pela aplicação" LENGTH="33 "/>
-    <textElement ID="I" KEY="004" ENTRY="Ação cancelada" LENGTH="14 "/>
-    <textElement ID="I" KEY="005" ENTRY="Deseja que os sistema gere automaticamente as senhas?" LENGTH="53 "/>
-    <textElement ID="I" KEY="006" ENTRY="Informe a senha a ser utilizada" LENGTH="31 "/>
-    <textElement ID="I" KEY="007" ENTRY="Nova senha" LENGTH="10 "/>
-    <textElement ID="I" KEY="008" ENTRY="Informar senha de 8 a 10 carac c/ letras e números" LENGTH="70 "/>
-    <textElement ID="I" KEY="009" ENTRY="A senha informada é fraca e não foi aceita" LENGTH="50 "/>
-    <textElement ID="I" KEY="010" ENTRY="Layout de exibição" LENGTH="18 "/>
-    <textElement ID="R" ENTRY="User Switch - Maintain Internet Users" LENGTH="37 "/>
-    <textElement ID="S" KEY="P_OBJTYP" ENTRY="D       ." LENGTH="9 "/>
-    <textElement ID="S" KEY="P_VRNT" ENTRY="D       ." LENGTH="9 "/>
-    <textElement ID="S" KEY="S_EMAIL" ENTRY="D       ." LENGTH="26 "/>
-    <textElement ID="S" KEY="S_OBJID" ENTRY="D       ." LENGTH="27 "/>
-   </language>
   </textPool>
   <dynpros>
    <dynpro PROG="ZRUSW01" DNUM="9000" FNUM="9000" BZMX="200 " BZBR="240 " MILI="192 " MICO="37 " MALI="0 " MACO="0 " NOLI="200 " NOCO="240 " VALP="0 " CUAN="G" SPRA="E" DTEXT="">
@@ -3097,9 +3062,9 @@ PROCESS AFTER INPUT.
    <pfstatus_fun CODE="BACK" TEXTNO="001" TYPE="E" TEXT_TYPE="S" FUN_TEXT="Voltar"/>
    <pfstatus_fun CODE="CANCEL" TEXTNO="001" TYPE="E" TEXT_TYPE="S" TEXT_NAME="ICON_CANCEL" ICON_ID="@0W@" FUN_TEXT="Cancelar"/>
    <pfstatus_fun CODE="EXIT" TEXTNO="001" TYPE="E" TEXT_TYPE="S" FUN_TEXT="Encerrar"/>
-   <pfstatus_fun CODE="LOCK" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_LOCKED" ICON_ID="@06@" FUN_TEXT="Bloquear usuário" INFO_TEXT="Bloquear"/>
-   <pfstatus_fun CODE="NEW_PWD" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_CHANGE_PASSWORD" ICON_ID="@I9@" FUN_TEXT="Alterar/criar senha usuário" INFO_TEXT="Alterar/criar senha"/>
-   <pfstatus_fun CODE="UNLOCK" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_UNLOCKED" ICON_ID="@07@" FUN_TEXT="Desbloquear usuário" INFO_TEXT="Desbloquear"/>
+   <pfstatus_fun CODE="LOCK" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_LOCKED" ICON_ID="@06@" FUN_TEXT="Lock User" INFO_TEXT="Lock User"/>
+   <pfstatus_fun CODE="NEW_PWD" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_CHANGE_PASSWORD" ICON_ID="@I9@" FUN_TEXT="Change Password" INFO_TEXT="Change Password"/>
+   <pfstatus_fun CODE="UNLOCK" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_UNLOCKED" ICON_ID="@07@" FUN_TEXT="Unlock User" INFO_TEXT="Unlock User"/>
    <pfstatus_but PFK_CODE="000001" CODE="0001" NO="01" PFNO="13"/>
    <pfstatus_but PFK_CODE="000001" CODE="0001" NO="02" PFNO="14"/>
    <pfstatus_but PFK_CODE="000001" CODE="0001" NO="03" PFNO="16"/>
@@ -3115,10 +3080,10 @@ PROCESS AFTER INPUT.
    <pfstatus_set STATUS="PF9000" FUNCTION="LOCK"/>
    <pfstatus_set STATUS="PF9000" FUNCTION="NEW_PWD"/>
    <pfstatus_set STATUS="PF9000" FUNCTION="UNLOCK"/>
-   <pfstatus_doc OBJ_TYPE="A" OBJ_CODE="000001" MODAL="D" INT_NOTE="Menu tela 9000"/>
-   <pfstatus_doc OBJ_TYPE="E" OBJ_CODE="000001" MODAL="D" INT_NOTE="Menu tela 9000"/>
-   <pfstatus_doc OBJ_TYPE="B" OBJ_CODE="000001" SUB_CODE="0001" MODAL="D" INT_NOTE="Menu tela 9000"/>
-   <pfstatus_tit CODE="TB9000" TEXT="Manutenção Usuários Portal de Compras"/>
+   <pfstatus_doc OBJ_TYPE="A" OBJ_CODE="000001" MODAL="D" INT_NOTE="Screen 9000"/>
+   <pfstatus_doc OBJ_TYPE="P" OBJ_CODE="000001" MODAL="D" INT_NOTE="Screen 9000"/>
+   <pfstatus_doc OBJ_TYPE="B" OBJ_CODE="000001" SUB_CODE="0001" MODAL="D" INT_NOTE="Screen 9000"/>
+   <pfstatus_tit CODE="TB9000" TEXT="Internet user password maintenance"/>
   </pfstatus>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp; Report  ZRUSW01
@@ -3179,9 +3144,6 @@ START-OF-SELECTION.
    <language SPRAS="E">
     <textElement ID="R" ENTRY="PAI Modules" LENGTH="11 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="PAI Modules" LENGTH="11 "/>
-   </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp;  Include           ZRUSW00_PAI
@@ -3214,9 +3176,6 @@ ENDMODULE.                 &quot; user_command_9000  INPUT</source>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="PBO Modules" LENGTH="11 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="PBO Modules" LENGTH="11 "/>
-   </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp;  Include           ZRUSW00_PBO
@@ -3235,9 +3194,6 @@ ENDMODULE.                 &quot; STATUS_9000  OUTPUT</source>
  </PROG>
  <PROG NAME="ZRUSW00_IMP" VARCL="X" SUBC="I" LEVL="700" RMAND="200" RLOAD="E" UCCHECK="X">
   <textPool>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Local class implementation" LENGTH="26 "/>
-   </language>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Local class implementation" LENGTH="26 "/>
    </language>
@@ -4700,9 +4656,6 @@ ENDCLASS.                    &quot;lcl_application IMPLEMENTATION</source>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Local class definition" LENGTH="22 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Local class definition" LENGTH="22 "/>
-   </language>
   </textPool>
   <source>*&amp;---------------------------------------------------------------------*
 *&amp;  Include           ZRUSW00_DEF
@@ -4763,9 +4716,6 @@ ENDCLASS.                    &quot;lcl_application DEFINITION</source>
  </PROG>
  <PROG NAME="ZRUSW00_TOP" VARCL="X" SUBC="I" LEVL="700" RMAND="200" RLOAD="E" UCCHECK="X">
   <textPool>
-   <language SPRAS="E">
-    <textElement ID="R" ENTRY="Include TOP" LENGTH="11 "/>
-   </language>
    <language SPRAS="E">
     <textElement ID="R" ENTRY="Include TOP" LENGTH="11 "/>
    </language>
@@ -4842,27 +4792,6 @@ SELECTION-SCREEN END OF BLOCK b5.</source>
     <textElement ID="S" KEY="S_OBJTP" ENTRY="        Internet user object type" LENGTH="33 "/>
     <textElement ID="S" KEY="S_OBJTP2" ENTRY="        Internet user object type" LENGTH="33 "/>
    </language>
-   <language SPRAS="E">
-    <textElement ID="I" KEY="001" ENTRY="Selection criteria" LENGTH="18 "/>
-    <textElement ID="I" KEY="002" ENTRY="Options" LENGTH="7 "/>
-    <textElement ID="I" KEY="003" ENTRY="ALV Layout" LENGTH="10 "/>
-    <textElement ID="I" KEY="004" ENTRY="REST API - Users setup" LENGTH="30 "/>
-    <textElement ID="I" KEY="005" ENTRY="Address can be maintained only for already saved entries" LENGTH="56 "/>
-    <textElement ID="R" ENTRY="REST API - Users setup" LENGTH="22 "/>
-    <textElement ID="S" KEY="P_DU" ENTRY="        Dialog users maintenance" LENGTH="32 "/>
-    <textElement ID="S" KEY="P_IU" ENTRY="        Internet users maintenance" LENGTH="34 "/>
-    <textElement ID="S" KEY="P_UA" ENTRY="        User assignment maintenance" LENGTH="35 "/>
-    <textElement ID="S" KEY="P_VRNT1" ENTRY="        Internet user display layout" LENGTH="36 "/>
-    <textElement ID="S" KEY="P_VRNT2" ENTRY="        Dialog users display layout" LENGTH="35 "/>
-    <textElement ID="S" KEY="P_VRNT3" ENTRY="        User assignment display layout" LENGTH="38 "/>
-    <textElement ID="S" KEY="S_APPID" ENTRY="        Application ID" LENGTH="22 "/>
-    <textElement ID="S" KEY="S_BNAME" ENTRY="        Dialog user" LENGTH="19 "/>
-    <textElement ID="S" KEY="S_BNAME2" ENTRY="        Dialog user" LENGTH="19 "/>
-    <textElement ID="S" KEY="S_OBJID" ENTRY="        Internet user id" LENGTH="24 "/>
-    <textElement ID="S" KEY="S_OBJID2" ENTRY="        Internet user id" LENGTH="24 "/>
-    <textElement ID="S" KEY="S_OBJTP" ENTRY="        Internet user object type" LENGTH="33 "/>
-    <textElement ID="S" KEY="S_OBJTP2" ENTRY="        Internet user object type" LENGTH="33 "/>
-   </language>
   </textPool>
   <dynpros>
    <dynpro PROG="ZRUSW00" DNUM="9000" FNUM="9000" BZMX="200 " BZBR="240 " MILI="192 " MICO="37 " MALI="0 " MACO="0 " NOLI="200 " NOCO="240 " VALP="0 " CUAN="G" SPRA="E" DTEXT="">
@@ -4906,7 +4835,7 @@ PROCESS AFTER INPUT.
    <pfstatus_set STATUS="PF9000" FUNCTION="PASS"/>
    <pfstatus_set STATUS="PF9000" FUNCTION="SAVE"/>
    <pfstatus_doc OBJ_TYPE="A" OBJ_CODE="000001" MODAL="D" INT_NOTE="Menu Screen 9000"/>
-   <pfstatus_doc OBJ_TYPE="E" OBJ_CODE="000001" MODAL="D" INT_NOTE="Menu Screen 9000"/>
+   <pfstatus_doc OBJ_TYPE="P" OBJ_CODE="000001" MODAL="D" INT_NOTE="Menu Screen 9000"/>
    <pfstatus_doc OBJ_TYPE="B" OBJ_CODE="000001" SUB_CODE="0001" MODAL="D" INT_NOTE="Menu Screen 9000"/>
    <pfstatus_tit CODE="TB9000" TEXT="&amp;1"/>
   </pfstatus>
@@ -4988,10 +4917,10 @@ START-OF-SELECTION.
  <TABL TABNAME="ZTBUSWUA" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="User Switch - User Assignment" AUTHCLASS="00" MAINFLAG="X" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
   <dd09l TABNAME="ZTBUSWUA" AS4LOCAL="A" AS4VERS="0000" TABKAT="0" TABART="APPL1" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
   <dd03p TABNAME="ZTBUSWUA" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="OBJTYPE" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="OJ_NAME" CHECKTABLE="TOJTB" ADMINFIELD="0" INTTYPE="C" INTLEN="000020" NOTNULL="X" DOMNAME="OJ_NAME" ROUTPUTLEN="000000" HEADLEN="10" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000010" OUTPUTLEN="000010" DECIMALS="000000" ENTITYTAB="TOJTB" MASK="  CHARE" MASKLEN="0000" DDTEXT="Object type" REPTEXT="Obj. type" SCRTEXT_S="Obj.type" SCRTEXT_M="Object type" SCRTEXT_L="Object type" DOMMASTER="D" DOMNAME3L="OJ_NAME" SHLPORIGIN="E" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="OBJID" DDLANGUAGE="E" POSITION="0003" KEYFLAG="X" ROLLNAME="WWWOBJID" CHECKTABLE="ZTBUSWIU" ADMINFIELD="0" INTTYPE="C" INTLEN="000032" NOTNULL="X" DOMNAME="WWWOBJID" ROUTPUTLEN="000000" MEMORYID="UID" HEADLEN="15" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000016" OUTPUTLEN="000016" DECIMALS="000000" ENTITYTAB="BAPIUSW01" CONVEXIT="ALPHA" MASK="  CHARE" MASKLEN="0000" DDTEXT="User ID in Internet user master" REPTEXT="User ID" SCRTEXT_S="User ID" SCRTEXT_M="User ID" SCRTEXT_L="Internet user ID" DOMMASTER="D" DOMNAME3L="WWWOBJID" SHLPORIGIN="E" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="OBJTYPE" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="OJ_NAME" CHECKTABLE="TOJTB" ADMINFIELD="0" INTTYPE="C" INTLEN="000020" NOTNULL="X" DOMNAME="OJ_NAME" ROUTPUTLEN="000000" HEADLEN="10" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000010" OUTPUTLEN="000010" DECIMALS="000000" ENTITYTAB="TOJTB" MASK="  CHARE" MASKLEN="0000" DDTEXT="Object type" REPTEXT="Obj. type" SCRTEXT_S="Obj.type" SCRTEXT_M="Object type" SCRTEXT_L="Object type" DOMMASTER="D" DOMNAME3L="OJ_NAME" SHLPORIGIN="P" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="OBJID" DDLANGUAGE="E" POSITION="0003" KEYFLAG="X" ROLLNAME="WWWOBJID" CHECKTABLE="ZTBUSWIU" ADMINFIELD="0" INTTYPE="C" INTLEN="000032" NOTNULL="X" DOMNAME="WWWOBJID" ROUTPUTLEN="000000" MEMORYID="UID" HEADLEN="15" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000016" OUTPUTLEN="000016" DECIMALS="000000" ENTITYTAB="BAPIUSW01" CONVEXIT="ALPHA" MASK="  CHARE" MASKLEN="0000" DDTEXT="User ID in Internet user master" REPTEXT="User ID" SCRTEXT_S="User ID" SCRTEXT_M="User ID" SCRTEXT_L="Internet user ID" DOMMASTER="D" DOMNAME3L="WWWOBJID" SHLPORIGIN="P" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWUA" FIELDNAME="APPID" DDLANGUAGE="E" POSITION="0004" KEYFLAG="X" ROLLNAME="ZDE_RESTAPI_APP_ID" ADMINFIELD="0" INTTYPE="C" INTLEN="000060" NOTNULL="X" ROUTPUTLEN="000000" HEADLEN="23" SCRLEN1="10" SCRLEN2="15" SCRLEN3="23" DTELMASTER="E" DATATYPE="CHAR" LENG="000030" OUTPUTLEN="000030" DECIMALS="000000" MASK="  CHARE" MASKLEN="0000" DDTEXT="REST API Application ID" REPTEXT="REST API Application ID" SCRTEXT_S="App ID" SCRTEXT_M="REST API App ID" SCRTEXT_L="REST API Application ID" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="BNAME" DDLANGUAGE="E" POSITION="0005" ROLLNAME="XUBNAME" CHECKTABLE="ZTBUSWDU" ADMINFIELD="0" INTTYPE="C" INTLEN="000024" DOMNAME="XUBNAME" ROUTPUTLEN="000000" MEMORYID="XUS" HEADLEN="12" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000012" OUTPUTLEN="000012" DECIMALS="000000" ENTITYTAB="USR02" MASK="  CHARE" MASKLEN="0000" DDTEXT="User Name in User Master Record" REPTEXT="User Name" SCRTEXT_S="User" SCRTEXT_M="User" SCRTEXT_L="User" DOMMASTER="D" DOMNAME3L="XUBNAME" SHLPORIGIN="E" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZTBUSWUA" FIELDNAME="BNAME" DDLANGUAGE="E" POSITION="0005" ROLLNAME="XUBNAME" CHECKTABLE="ZTBUSWDU" ADMINFIELD="0" INTTYPE="C" INTLEN="000024" DOMNAME="XUBNAME" ROUTPUTLEN="000000" MEMORYID="XUS" HEADLEN="12" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000012" OUTPUTLEN="000012" DECIMALS="000000" ENTITYTAB="USR02" MASK="  CHARE" MASKLEN="0000" DDTEXT="User Name in User Master Record" REPTEXT="User Name" SCRTEXT_S="User" SCRTEXT_M="User" SCRTEXT_L="User" DOMMASTER="D" DOMNAME3L="XUBNAME" SHLPORIGIN="P" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWUA" FIELDNAME="REFUSER" DDLANGUAGE="E" POSITION="0006" ROLLNAME="ZDE_RESTAPI_REFUSRONLY" ADMINFIELD="0" INTTYPE="C" INTLEN="000002" DOMNAME="ZDO_RESTAPI_REFUSRONLY" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="E" DATATYPE="CHAR" LENG="000001" OUTPUTLEN="000001" DECIMALS="000000" VALEXI="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="REST API  - Flag ref. user only" REPTEXT="Ref. User Only" SCRTEXT_S="Ref. User" SCRTEXT_M="Ref. User Only" SCRTEXT_L="Reference User Only" DOMNAME3L="ZDO_RESTAPI_REFUSRONLY" SHLPORIGIN="F" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWUA" FIELDNAME="PKEY" DDLANGUAGE="E" POSITION="0007" ROLLNAME="ZDE_RESTAPI_PRIVATE_KEY" ADMINFIELD="0" INTTYPE="C" INTLEN="000064" ROUTPUTLEN="000000" HEADLEN="32" SCRLEN1="10" SCRLEN2="15" SCRLEN3="25" DTELMASTER="E" DATATYPE="CHAR" LENG="000032" OUTPUTLEN="000032" DECIMALS="000000" MASK="  CHARE" MASKLEN="0000" DDTEXT="Internet User Private Key - Authentication by token" REPTEXT="Private Key" SCRTEXT_S="Priv.Key" SCRTEXT_M="Private Key" SCRTEXT_L="Internet User Private Key" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWUA" FIELDNAME="AENAM" DDLANGUAGE="E" POSITION="0008" ROLLNAME="AENAM" ADMINFIELD="0" INTTYPE="C" INTLEN="000024" DOMNAME="USNAM" ROUTPUTLEN="000000" HEADLEN="12" SCRLEN1="06" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000012" OUTPUTLEN="000012" DECIMALS="000000" MASK="  CHARE" MASKLEN="0000" DDTEXT="Name of Person Who Changed Object" REPTEXT="Changed by" SCRTEXT_S="By" SCRTEXT_M="Changed by" SCRTEXT_L="Changed by" DOMNAME3L="USNAM" DEPTH="00" COMPTYPE="E" DEFFDNAME="CHANGED_BY" EXCLASS="0" DBPOSITION="0000"/>
@@ -5078,7 +5007,7 @@ START-OF-SELECTION.
  <TABL TABNAME="ZTBUSWIU" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="User Switch - Internet Users" AUTHCLASS="00" MAINFLAG="X" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
   <dd09l TABNAME="ZTBUSWIU" AS4LOCAL="A" AS4VERS="0000" TABKAT="0" TABART="APPL1" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
   <dd03p TABNAME="ZTBUSWIU" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
-  <dd03p TABNAME="ZTBUSWIU" FIELDNAME="OBJTYPE" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="OJ_NAME" CHECKTABLE="TOJTB" ADMINFIELD="0" INTTYPE="C" INTLEN="000020" NOTNULL="X" DOMNAME="OJ_NAME" ROUTPUTLEN="000000" HEADLEN="10" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000010" OUTPUTLEN="000010" DECIMALS="000000" ENTITYTAB="TOJTB" MASK="  CHARE" MASKLEN="0000" DDTEXT="Object type" REPTEXT="Obj. type" SCRTEXT_S="Obj.type" SCRTEXT_M="Object type" SCRTEXT_L="Object type" DOMMASTER="D" DOMNAME3L="OJ_NAME" SHLPORIGIN="E" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
+  <dd03p TABNAME="ZTBUSWIU" FIELDNAME="OBJTYPE" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="OJ_NAME" CHECKTABLE="TOJTB" ADMINFIELD="0" INTTYPE="C" INTLEN="000020" NOTNULL="X" DOMNAME="OJ_NAME" ROUTPUTLEN="000000" HEADLEN="10" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000010" OUTPUTLEN="000010" DECIMALS="000000" ENTITYTAB="TOJTB" MASK="  CHARE" MASKLEN="0000" DDTEXT="Object type" REPTEXT="Obj. type" SCRTEXT_S="Obj.type" SCRTEXT_M="Object type" SCRTEXT_L="Object type" DOMMASTER="D" DOMNAME3L="OJ_NAME" SHLPORIGIN="P" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWIU" FIELDNAME="OBJID" DDLANGUAGE="E" POSITION="0003" KEYFLAG="X" ROLLNAME="WWWOBJID" ADMINFIELD="0" INTTYPE="C" INTLEN="000032" NOTNULL="X" DOMNAME="WWWOBJID" ROUTPUTLEN="000000" MEMORYID="UID" HEADLEN="15" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000016" OUTPUTLEN="000016" DECIMALS="000000" ENTITYTAB="BAPIUSW01" CONVEXIT="ALPHA" MASK="  CHARE" MASKLEN="0000" DDTEXT="User ID in Internet user master" REPTEXT="User ID" SCRTEXT_S="User ID" SCRTEXT_M="User ID" SCRTEXT_L="Internet user ID" DOMMASTER="D" DOMNAME3L="WWWOBJID" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000"/>
   <dd03p TABNAME="ZTBUSWIU" FIELDNAME="ADDRNUMBER" DDLANGUAGE="E" POSITION="0004" ROLLNAME="AD_ADDRNUM" ADMINFIELD="0" INTTYPE="C" INTLEN="000020" DOMNAME="AD_ADDRNUM" ROUTPUTLEN="000000" MEMORYID="ADR" LOGFLAG="X" HEADLEN="10" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CHAR" LENG="000010" OUTPUTLEN="000010" DECIMALS="000000" ENTITYTAB="ADRC" CONVEXIT="ALPHA" MASK="  CHARE" MASKLEN="0000" DDTEXT="Address number" REPTEXT="Addr. no." SCRTEXT_S="Addr. no." SCRTEXT_M="Address number" SCRTEXT_L="Address number" DOMNAME3L="AD_ADDRNUM" DEPTH="00" COMPTYPE="E" DEFFDNAME="ADDR_NO" EXCLASS="0" DBPOSITION="0000"/>
   <dd05m TABNAME="ZTBUSWIU" FIELDNAME="OBJTYPE" FORTABLE="ZTBUSWIU" FORKEY="OBJTYPE" CHECKTABLE="TOJTB" CHECKFIELD="NAME" PRIMPOS="0001" DOMNAME="OJ_NAME" DATATYPE="CHAR" LENG="000010"/>
