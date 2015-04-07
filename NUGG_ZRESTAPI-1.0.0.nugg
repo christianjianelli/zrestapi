@@ -1620,11 +1620,20 @@ ENDMETHOD.</source>
 
           request_type  = me-&gt;o_resource_create-&gt;get_request_type( i_app = app ).
 
+        CATCH cx_root INTO lo_ex.
+
+          &quot; No problem at all. But in this case the parameters received in the http request
+          &quot; must be handled manually.
+
+      ENDTRY.
+
+      TRY.
+
           response_type = me-&gt;o_resource_create-&gt;get_response_type( i_app = app ).
 
         CATCH cx_root INTO lo_ex.
 
-          &quot; Do nothing ...
+          &quot; No problem at all. But in this case the response type will fall back to the basic response type
 
       ENDTRY.
 
@@ -1685,11 +1694,20 @@ ENDMETHOD.</source>
 
           request_type  = me-&gt;o_resource_read-&gt;get_request_type( i_app = app ).
 
+        CATCH cx_root INTO lo_ex.
+
+          &quot; No problem at all. But in this case the parameters received in the http request
+          &quot; must be handled manually.
+
+      ENDTRY.
+
+      TRY.
+
           response_type = me-&gt;o_resource_read-&gt;get_response_type( i_app = app ).
 
         CATCH cx_root INTO lo_ex.
 
-          &quot; Do nothing ...
+          &quot; No problem at all. But in this case the response type will fall back to the basic response type
 
       ENDTRY.
 
@@ -1748,13 +1766,22 @@ ENDMETHOD.</source>
 
       TRY.
 
-          request_type  = me-&gt;o_resource_update-&gt;get_request_type( ).
-
-          response_type = me-&gt;o_resource_update-&gt;get_response_type( ).
+          request_type  = me-&gt;o_resource_update-&gt;get_request_type( i_app = app ).
 
         CATCH cx_root INTO lo_ex.
 
-          &quot; Do nothing ...
+          &quot; No problem at all. But in this case the parameters received in the http request
+          &quot; must be handled manually.
+
+      ENDTRY.
+
+      TRY.
+
+          response_type = me-&gt;o_resource_update-&gt;get_response_type( i_app = app ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; No problem at all. But in this case the response type will fall back to the basic response type
 
       ENDTRY.
 
@@ -1813,12 +1840,22 @@ ENDMETHOD.</source>
 
       TRY.
 
-          request_type  = me-&gt;o_resource_delete-&gt;get_request_type( ).
-          response_type = me-&gt;o_resource_delete-&gt;get_response_type( ).
+          request_type  = me-&gt;o_resource_delete-&gt;get_request_type( i_app = app ).
 
         CATCH cx_root INTO lo_ex.
 
-          &quot; Do nothing ...
+          &quot; No problem at all. But in this case the parameters received in the http request
+          &quot; must be handled manually.
+
+      ENDTRY.
+
+      TRY.
+
+          response_type = me-&gt;o_resource_delete-&gt;get_response_type( i_app = app ).
+
+        CATCH cx_root INTO lo_ex.
+
+          &quot; No problem at all. But in this case the response type will fall back to the basic response type
 
       ENDTRY.
 
