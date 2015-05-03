@@ -453,6 +453,15 @@ ENDMETHOD.</source>
 
     ENDIF.
 
+    &quot; Check if the user was switched already
+    IF l_user = sy-uname.
+
+      r_switch_ok = &apos;X&apos;.
+
+      EXIT.
+
+    ENDIF.
+
     IF ( NOT l_user IS INITIAL ) AND ( NOT l_pwd IS INITIAL ).
 
       l_password = l_pwd.
